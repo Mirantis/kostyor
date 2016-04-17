@@ -1,4 +1,4 @@
-Flashbang
-=========
+Kostyor
+=======
 
-This repo is for handling the upgrading an OpenStack cluster.
+Aims and launches [Grenades](http://docs.openstack.org/developer/grenade/)

@@ -1,2 +1,2 @@
-python-openstackclient
+python-keystoneclient
 pbr

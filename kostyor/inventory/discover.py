@@ -41,7 +41,7 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
             password='changeme', tenant_name='demo',
             auth_url="http://192.168.1.246:5000/v2.0/"))
 
-        cluster_discovery = ServiceDiscovery(sess)
+        cluster_discovery = OpenStackServiceDiscovery(sess)
         cluster_discovery.discover()
 
     """

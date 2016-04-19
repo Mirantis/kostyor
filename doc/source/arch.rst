@@ -21,6 +21,7 @@ based upgrade strategy invokes the Grenade script. Ansible based
 upgrade strategy makes ansible calls, puppet does puppet calls, etc..
 
 * UpgradeStrategy object
+
   * GrenadeUpgradeStrategy
   * AnsibleUpgradeStrategy
 
@@ -36,9 +37,12 @@ health.
 
 
 * InventoryManager
+
   * NovaHypervisorInventory
+
     * Based off nova hypervisor-list REST API call
-  * AnsibleInventory?
+
+  * AnsibleInventory
 
 
 ::

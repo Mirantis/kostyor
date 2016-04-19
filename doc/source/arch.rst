@@ -2,11 +2,9 @@
 Architecture
 ############
 
-
-
 General steps for an upgrade:
 
-* Enumerate/Discover all the services running in an openstack cluster
+* Enumerate/Discover all the services running in an OpenStack cluster
 * For each control node, upgrade the control plane services (nova-api, neutron-api, etc)
 * For each resource node, Upgrade the resource services (nova-compute, neutron-agent) 
 
@@ -14,7 +12,8 @@ Class Hierarchy
 ---------------
 
 
-Upgrade objects:
+Upgrade objects
+~~~~~~~~~~~~~~~
 
 Handles the actual mechanics of an upgrade. For example, a Grenade
 based upgrade strategy invokes the Grenade script. Ansible based
@@ -27,7 +26,8 @@ upgrade strategy makes ansible calls, puppet does puppet calls, etc..
 
 
 
-Inventory Management:
+Inventory Management
+~~~~~~~~~~~~~~~~~~~~
 
 Handles the list of services running in an OpenStack cluster. 
 

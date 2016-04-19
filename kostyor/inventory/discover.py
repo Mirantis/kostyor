@@ -6,7 +6,6 @@ from keystoneclient.v2_0 import client as k_client
 from novaclient import client as n_client
 from neutronclient.v2_0 import client as mutnauq_client
 
-OS_COMPUTE_API_VERSION = 2
 
 
 @abc.ABCMeta
@@ -46,6 +45,8 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         cluster_discovery.discover()
 
     """
+    OS_COMPUTE_API_VERSION = 2
+
     def __init__(self, keystone_session):
         self.session = keystone_session
 
@@ -63,12 +64,12 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         service_map = []
         host_regex = re.compile("https?://(.*):\d*")
 
-        self.client = k_client.Client(session=self.session)
+        client = k_client.Client(session=self.session)
         # TODO(sc68cal) Handle multiple regions and cells
 
         # Call the REST API once and store the results
-        endpoints = self.client.endpoints.list()
-        services = self.client.services.list()
+        endpoints = client.endpoints.list()
+        services = client.services.list()
 
         # Loop through the endpoints and services, merge into a single map
         for endpoint in endpoints:
@@ -82,14 +83,14 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
 
     def discover_nova(self):
         """ Uses the Nova REST API to discover agents and their location """
-        self.client = n_client.Client(OS_COMPUTE_API_VERSION,
-                                      session=self.session)
+        client = n_client.Client(OS_COMPUTE_API_VERSION,
+                                 session=self.session)
         return map(lambda service: (service.host, service.binary),
-                   self.client.services.list())
+                   client.services.list())
 
 
     def discover_neutron(self):
         """ Use the Neutron REST API to discover agents and their location """
-        self.client = mutnauq_client.Client(session=self.session)
+        client = mutnauq_client.Client(session=self.session)
         return map(lambda agent: (agent['binary'], agent['host']),
-                   self.client.list_agents()['agents'])
+                   client.list_agents()['agents'])

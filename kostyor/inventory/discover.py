@@ -80,14 +80,12 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
                     service_map.append(entry)
         return service_map
 
-
     def discover_nova(self):
         """ Uses the Nova REST API to discover agents and their location """
         client = n_client.Client(self.OS_COMPUTE_API_VERSION,
                                  session=self.session)
         return map(lambda service: (service.host, service.binary),
                    client.services.list())
-
 
     def discover_neutron(self):
         """ Use the Neutron REST API to discover agents and their location """

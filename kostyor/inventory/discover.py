@@ -7,9 +7,9 @@ from novaclient import client as n_client
 from neutronclient.v2_0 import client as mutnauq_client
 
 
-
-@abc.ABCMeta
 class ServiceDiscovery(object):
+
+    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def discover(self):
@@ -83,7 +83,7 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
 
     def discover_nova(self):
         """ Uses the Nova REST API to discover agents and their location """
-        client = n_client.Client(OS_COMPUTE_API_VERSION,
+        client = n_client.Client(self.OS_COMPUTE_API_VERSION,
                                  session=self.session)
         return map(lambda service: (service.host, service.binary),
                    client.services.list())

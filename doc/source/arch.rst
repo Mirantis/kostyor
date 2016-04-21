@@ -40,6 +40,10 @@ Upgrade Workflow
 * For each control node, upgrade the control plane services (nova-api, neutron-api, etc)
 * For each resource node:
 
+  * Fence off the node so no new requests are scheduled on the node
+
+    * i.e. Disable service record in Nova database for the node
+
   * Migrate resources off the node (tenant instances, tenant volumes)
   * Upgrade the resource services (nova-compute, neutron-agent)
 
@@ -90,9 +94,34 @@ health.
 
     * Uses Puppet mechanism
 
+Types of Upgrades
+-----------------
 
-Servie Upgrade Strategies
--------------------------
+* Service upgrade
+
+  * Upgrading of services on a node.
+
+* Node/Host upgrade
+
+  * Upgrading of the node operating system, or dependencies of
+    services (kvm, libvirt, etc)
+
+Node/Host Upgrade Strategies
+----------------------------
+
+* Nodes with persistent data have to be upgraded carefully
+
+  * Either data is replicated so that it can be nuked and paved
+  * Or in-place upgrade, and ensure no data is corrupted
+
+* Nodes that don't - nuke and pave
+
+  * Nova compute nodes *should be* stateless, so should be able to just
+    nuke and pave
+
+
+Service Upgrade Strategies
+--------------------------
 
 
 * Package Based
@@ -109,14 +138,3 @@ Servie Upgrade Strategies
     package
 
 
-Types of Upgrades
------------------
-
-* Service upgrade
-
-  * Upgrading of services on a node.
-
-* Node/Host upgrade
-
-  * Upgrading of the node operating system, or dependencies of
-    services (kvm, libvirt, etc)

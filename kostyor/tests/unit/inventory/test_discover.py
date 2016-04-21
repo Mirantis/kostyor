@@ -30,3 +30,20 @@ class OpenStackServiceDiscoveryTest(unittest.TestCase):
                                                      "host": "foo"}]}
         res = self.osd.discover_neutron()
         self.assertEqual(expected, res)
+
+    @mock.patch("keystoneclient.v2_0.endpoints.EndpointManager.list")
+    @mock.patch("keystoneclient.v2_0.services.ServiceManager.list")
+    def test_discover_keystone(self, fk_servicemanager, fk_endpointmanager):
+        host = 'http://devstack-1.coreitpro.com:93923/'
+        fake_id = 'fake-id'
+        expected = [('devstack-1.coreitpro.com', 'nova-api')]
+        fake_endpoint = mock.Mock()
+        fake_endpoint.service_id = fake_id
+        fake_endpoint.internalurl = host
+        fake_service = mock.Mock()
+        fake_service.id = fake_id
+        fake_service.name = 'nova'
+
+        fk_endpointmanager.return_value = [fake_endpoint]
+        fk_servicemanager.return_value = [fake_service]
+        self.assertEqual(expected, self.osd.discover_keystone())

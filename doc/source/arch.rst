@@ -95,7 +95,7 @@ health.
     * Uses Puppet mechanism
 
 Types of Upgrades
------------------
+=================
 
 * Service upgrade
 

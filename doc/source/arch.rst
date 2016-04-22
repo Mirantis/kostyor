@@ -10,9 +10,10 @@ Architecture
   * Pause a running upgrade
   * Rollback/abort/cancel a running upgrade
 
-* Management panel
+* Management panel / REST API
 
   * Responds to requests from the client
+  * Issue alerts to tenants that an upgrade is in progress
 
 * Discovery engine
 

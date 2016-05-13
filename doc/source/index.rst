@@ -8,3 +8,4 @@ laid out in the `OPNFV Escalator project <https://wiki.opnfv.org/display/escalat
 .. toctree::
     arch.rst
     cli.rst
+    rest_api.rst

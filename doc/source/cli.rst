@@ -42,7 +42,7 @@ Commands
 
   Show information about <cluster_id>
 
-* upgrade <cluster_id> <to_version>
+* upgrade-cluster <cluster_id> <to_version>
 
   * Kicks off an upgrade
 
@@ -51,7 +51,7 @@ Commands
       
       kostyor upgrade-cluster home_lab mitaka
 
-* upgrade-status
+* upgrade-status <cluster_id>
 
   * Return the status of a running upgrade - should return how many
     nodes have been upgraded, other in-depth data
@@ -59,3 +59,52 @@ Commands
   ::
 
       kostyor upgrade-status home_lab
+
+* upgrade-pause <cluster_id>
+
+  * Pause running upgrade, so that it can be continued and aborted
+    later
+
+
+  ::
+
+      kostyor upgrade-pause home_lab
+
+* upgrade-rollback <cluster_id>
+
+  * Rollbacks running or paused upgrade, moving all the components
+    to their initial versions
+
+
+  ::
+
+      kostyor upgrade-rollback home_lab
+
+* upgrade-cancel <cluster_id>
+
+  * Cancels running or paused upgrade. All the currently running
+    upgrades will be finished
+
+
+  ::
+
+      kostyor upgrade-cancel home_lab
+
+* upgrade-abort <cluster_id>
+
+  * Aborts an upgrade, trying to immediately stop all the running
+    upgrade operations
+
+
+  ::
+
+      kostyor upgrade-abort home_lab
+
+* upgrade-continue <cluster_id>
+
+  * Continues paused upgrade
+
+
+  ::
+
+      kostyor upgrade-continue home_lab

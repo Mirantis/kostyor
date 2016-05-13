@@ -90,16 +90,6 @@ Commands
 
       kostyor upgrade-cancel home_lab
 
-* upgrade-abort <cluster_id>
-
-  * Aborts an upgrade, trying to immediately stop all the running
-    upgrade operations
-
-
-  ::
-
-      kostyor upgrade-abort home_lab
-
 * upgrade-continue <cluster_id>
 
   * Continues paused upgrade

@@ -98,3 +98,23 @@ Commands
   ::
 
       kostyor upgrade-continue home_lab
+
+
+* list-upgrade-versions
+
+  * Returns list of available versions to upgrade
+
+
+  ::
+
+      kostyor list-upgrade-versions
+
+
+* list-discovery-methods
+
+  * Returns a list of available methods to discover the hosts and
+    services that comprise an OpenStack cluster
+
+  ::
+
+      kostyor list-discovery-methods

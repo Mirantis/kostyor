@@ -40,7 +40,7 @@ Commands
       kostyor cluster-status home_lab
 
 
-  Show information about <cluster_id>
+  Shows information about <cluster_id>
 
 * upgrade-cluster <cluster_id> <to_version>
 
@@ -53,7 +53,7 @@ Commands
 
 * upgrade-status <cluster_id>
 
-  * Return the status of a running upgrade - should return how many
+  * Returns the status of a running upgrade - should return how many
     nodes have been upgraded, other in-depth data
 
   ::
@@ -62,7 +62,7 @@ Commands
 
 * upgrade-pause <cluster_id>
 
-  * Pause running upgrade, so that it can be continued and aborted
+  * Pauses running upgrade, so that it can be continued and aborted
     later
 
 
@@ -100,14 +100,14 @@ Commands
       kostyor upgrade-continue home_lab
 
 
-* list-upgrade-versions
+* list-upgrade-versions <cluster_id>
 
-  * Returns list of available versions to upgrade
-
+  * Returns list of available versions to upgrade for cluster with
+    specified id
 
   ::
 
-      kostyor list-upgrade-versions
+      kostyor list-upgrade-versions home_lab
 
 
 * list-discovery-methods

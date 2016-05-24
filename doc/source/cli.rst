@@ -46,19 +46,21 @@ Commands
 
   * Kicks off an upgrade
 
+  * Returns an upgrade_uuid
+
 
   ::
       
       kostyor upgrade-cluster home_lab mitaka
 
-* upgrade-status <cluster_id>
+* upgrade-status <upgrade_uuid>
 
   * Returns the status of a running upgrade - should return how many
     nodes have been upgraded, other in-depth data
 
   ::
 
-      kostyor upgrade-status home_lab
+      kostyor upgrade-status UPGRADE_UUID
 
 * upgrade-pause <cluster_id>
 
@@ -118,3 +120,43 @@ Commands
   ::
 
       kostyor list-discovery-methods
+
+
+
+
+
+
+kostyor list-upgrades
+
+
+cluster-status
+
+* region name
+* openstack-versions
+* state
+      * active
+      * maintenance
+      * error
+
+
+        kostyor check-upgrade <cluster_id>
+
+        returns:
+
+        state
+          in progress
+          ready
+      
+        
+
+cluster-component-list <cluster_id>
+
+returns 
+
+* component name
+* component version
+* can be upgraded?
+
+could have multiple nova-cpus - with liberty, mitaka 
+
+

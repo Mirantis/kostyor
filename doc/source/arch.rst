@@ -139,3 +139,15 @@ Service Upgrade Strategies
     package
 
 
+Handling Failures
+-----------------
+
+* If a node fails to upgrade:
+
+  * Prompt admin for action? Fix manually, retry upgrade (transient failure), or abort upgrade?
+
+  * Have a percentage of threshold where if exceeds - pause upgrade?
+    5% of all computes?
+
+  * Monitoring tenant instances - if outage occurs - pause the
+    upgrade?

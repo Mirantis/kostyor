@@ -1,6 +1,6 @@
 from flask import Flask
 from flask import jsonify
-
+from flask import request
 
 from db import api as db_api
 from inventory import upgrades
@@ -46,13 +46,23 @@ def get_discovery_methods():
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
     versions = db_api.get_upgrade_versions(cluster_id)
+    if not versions:
+        message = {
+                'status': 404,
+                'message': 'Get upgrade version failed for cluster %s' % cluster_id,
+        }
+        resp = jsonify(message)
+        resp.status_code = 404
+        return resp
+
     resp = jsonify(versions)
     return resp
 
-@app.route('/discover-cluster/<disovery_method>', methods = ['POST'])
-def create_discovery_method(discovery_method):
+@app.route('/discover-cluster', methods = ['POST'])
+def create_discovery_method():
+    discovery_method = request.args.get('method')
     disc_method = db_api.create_discovery_method(discovery_method)
-    if not disc_methods:
+    if not disc_method:
         message = {
                 'status': 404,#TODO probable should fix it later
                 'message': 'Failed to create discovery method: %s' %
@@ -62,13 +72,14 @@ def create_discovery_method(discovery_method):
         resp.status_code = 404
         return resp
 
-    resp = jsonify(disc_methods)
+    resp = jsonify(disc_method)
     resp.status_code = 201
     return resp
 
 @app.route('/upgrade-cluster/<cluster_id>', methods = ['POST'])
 def create_cluster_upgrade(cluster_id):
-    upgrade = db_api.create_cluster_upgrade(cluster_id)
+    to_version = request.args.get('version')
+    upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
     if not upgrade:
         message = {
                 'status': 404,#TODO probable should fix it later
@@ -83,7 +94,7 @@ def create_cluster_upgrade(cluster_id):
     resp.status_code = 201
     return resp
 
-@app.route('/upgrade-cancel/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-cancel/<cluster_id>', methods = ['PUT'])
 def cancel_cluster_upgrade(cluster_id):
     upgrade = db_api.cancel_cluster_upgrade(cluster_id)
     if not upgrade:
@@ -96,7 +107,7 @@ def cancel_cluster_upgrade(cluster_id):
         resp.status_code = 404
         return resp
 
-    status = inventory.cancel_upgrade(cluster_id)
+    status = upgrades.cancel_upgrade(cluster_id)
     if status:
         #TODO: cancel failed, probably should update cluster upgrade status
         message = {
@@ -112,7 +123,7 @@ def cancel_cluster_upgrade(cluster_id):
     resp = jsonify(upgrade)
     return resp
 
-@app.route('/upgrade-continue/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-continue/<cluster_id>', methods = ['PUT'])
 def continue_cluster_upgrade(cluster_id):
     upgrade = db_api.continue_cluster_upgrade(cluster_id)
     if not upgrade:
@@ -125,7 +136,7 @@ def continue_cluster_upgrade(cluster_id):
         resp.status_code = 404
         return resp
 
-    status = inventory.continue_upgrade(cluster_id)
+    status = upgrades.continue_upgrade(cluster_id)
     if status:
         #TODO: continue failed, probably should update cluster upgrade status
         message = {
@@ -141,7 +152,7 @@ def continue_cluster_upgrade(cluster_id):
     resp = jsonify(upgrade)
     return resp
 
-@app.route('/upgrade-pause/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-pause/<cluster_id>', methods = ['PUT'])
 def pause_cluster_upgrade(cluster_id):
     upgrade = db_api.pause_cluster_upgrade(cluster_id)
     if not upgrade:
@@ -154,7 +165,7 @@ def pause_cluster_upgrade(cluster_id):
         resp.status_code = 404
         return resp
 
-    status = inventory.pause_upgrade(cluster_id)
+    status = upgrades.pause_upgrade(cluster_id)
     if status:
         #TODO: pause failed, probably should update cluster upgrade status
         message = {
@@ -170,7 +181,7 @@ def pause_cluster_upgrade(cluster_id):
     resp = jsonify(upgrade)
     return resp
 
-@app.route('/upgrade-rollback/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-rollback/<cluster_id>', methods = ['PUT'])
 def rollback_cluster_upgrade(cluster_id):
     upgrade = db_api.rollback_cluster_upgrade(cluster_id)
     if not upgrade:
@@ -183,7 +194,7 @@ def rollback_cluster_upgrade(cluster_id):
         resp.status_code = 404
         return resp
 
-    status = inventory.rollback_upgrade(cluster_id)
+    status = upgrades.rollback_upgrade(cluster_id)
     if status:
         #TODO: rollback failed, probably should update cluster upgrade status
         message = {

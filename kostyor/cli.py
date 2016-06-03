@@ -42,6 +42,8 @@ def _make_request_with_cluser_id(http_method, endpoint, cluster_id):
                                                   cluster_id))
 
 # creating formated output for resulting tables
+# TODO(sc68cal) replace this with prettytable
+# https://code.google.com/archive/p/prettytable/
 def print_result(items):
     if not isinstance(items, list):
         items = [items]

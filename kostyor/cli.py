@@ -36,6 +36,11 @@ def methods_of(obj):
     return result
 
 
+def _make_request_with_cluser_id(http_method, endpoint, cluster_id):
+    req_method = getattr(requests, http_method)
+    return req_method('http://{}:{}/{}/{}'.format(host, port, endpoint,
+                                                  cluster_id))
+
 # creating formated output for resulting tables
 def print_result(items):
     if not isinstance(items, list):
@@ -90,10 +95,7 @@ class ClusterStatus(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def get_status(cluster_id):
-        r = requests.get('http://{host}:{port}/cluster-status/{cluster_id}'.format(
-                            host=host, port=port, cluster_id=cluster_id
-                         )
-        )
+        r = _make_request_with_cluser_id('get', 'cluster-status', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get cluster status: %s' % message)
@@ -109,12 +111,7 @@ class ClusterUpgrade(object):
     @args('--cluster_id', metavar='<cluster_id>')
     @args('--to_version', metavar='<to_version>')
     def upgrade(cluster_id, to_version):
-        r = requests.post(
-            'http://{host}:{port}/upgrade-cluster/{cluster_id}'.format(
-                host=host, port=port, cluster_id=cluster_id
-            ),
-            params={'version': to_version}
-        )
+        r = _make_request_with_cluser_id('post', 'upgrade-cluster', cluster_id)
         if r.status_code != 201:
             message = r.json()['message']
             raise Exception(message)
@@ -128,10 +125,7 @@ class UpgradeStatus(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def get_status(cluster_id):
-        r = requests.get('http://{host}:{port}/upgrade-status/{cluster_id}'.format(
-                            host=host, port=port, cluster_id=cluster_id
-                         )
-        )
+        r = _make_request_with_cluser_id('get', 'upgrade-status', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get upgrade status: %s' % message)
@@ -147,11 +141,7 @@ class PauseUpgrade(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def pause(cluster_id):
-        r = requests.put(
-            'http://{host}:{port}/upgrade-pause/{cluster_id}'.format(
-                host=host, port=port, cluster_id=cluster_id
-            )
-        )
+        r = _make_request_with_cluser_id('put', 'upgrade-pause', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -167,11 +157,7 @@ class RollbackUpgrade(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def rollback(cluster_id):
-        r = requests.put(
-            'http://{host}:{port}/upgrade-rollback/{cluster_id}'.format(
-                host=host, port=port, cluster_id=cluster_id
-            )
-        )
+        r = _make_request_with_cluser_id('put', 'upgrade-rollback', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -186,11 +172,7 @@ class CancelUpgrade(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def cancel(cluster_id):
-        r = requests.put(
-            'http://{host}:{port}/upgrade-cancel/{cluster_id}'.format(
-                host=host, port=port, cluster_id=cluster_id
-            )
-        )
+        r = _make_request_with_cluser_id('put', 'upgrade-cancel', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -204,11 +186,7 @@ class ContinueUpgrade(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def continue_upgrade(cluster_id):
-        r = requests.put(
-            'http://{host}:{port}/upgrade-continue/{cluster_id}'.format(
-                host=host, port=port, cluster_id=cluster_id
-            )
-        )
+        r = _make_request_with_cluser_id('put', 'upgrade-continue', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -241,11 +219,7 @@ class ListUpgradeVersions(object):
     @staticmethod
     @args('--cluster_id', metavar='<cluster_id>')
     def list(cluster_id):
-        r = requests.get(
-            'http://{host}:{port}/upgrade-versions/{cluster_id}'.format(
-                host=host, port=port, cluster_id=cluster_id
-            )
-        )
+        r = _make_request_with_cluser_id('get', 'upgrade-versions', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get list of upgrade versions: %s'

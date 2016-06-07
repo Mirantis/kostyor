@@ -4,7 +4,6 @@ Command Line Client
 
 Interacts with the Kostyor REST API.
 
-
 Configuration
 =============
 
@@ -121,12 +120,7 @@ Commands
 
       kostyor list-discovery-methods
 
-
-
-
-
-
-kostyor list-upgrades
+$ kostyor list-upgrades
 
 
 cluster-status
@@ -160,3 +154,47 @@ returns
 could have multiple nova-cpus - with liberty, mitaka 
 
 
+$ kostyor cluster-status <cluster-id>
+
+* Overall State
+Returns: 
+    * READY FOR UPGRADE
+    * UPGRADE IN PROGRESS
+    * UPGRADE PAUSED
+    * UPGRADE ERROR
+    * UPGRADE CANCELLED
+* Most recent upgrade UUID 
+
+$ kostyor upgrade-list <cluster-id> 
+example: $ kostyor upgrade-list sean_devstack_lab
+
+Returns:
+    * AAAA: liberty to mitaka -> failed
+    * BBBB: liberty to mitaka -> cancelled
+    * CCCC liberty to mitaka -> successful
+
+
+$ kostyor cluster-status <cluster-id> <service>
+
+Returns something similar to:
+https://miracloud.slack.com/files/scollins/F1BDVR3QW/20160524_115934_hdr.jpg
+
+example: $ kostyor cluster-status sean_devstack_lab nova-cpu
+
+* For each nova-cpu in the cluster:
+    * list the version of nova-cpu
+    * instances running
+    * # of instances to migrate off
+
+$ kostyor cluster-list 
+
+* sean's devstack lab
+* jay's devstack lab
+
+$ kostyor upgrade-status <upgrade_uuid>
+
+Returns something similar to:
+https://miracloud.slack.com/files/scollins/F1BEF48JW/20160524_115502_hdr.jpg
+https://miracloud.slack.com/files/scollins/F1BE9DNTB/20160524_120906_hdr.jpg
+https://miracloud.slack.com/files/scollins/F1BEFCHR8/20160524_121523_hdr.jpg
+https://miracloud.slack.com/files/scollins/F1BE0BB5W/20160524_121055_hdr.jpg

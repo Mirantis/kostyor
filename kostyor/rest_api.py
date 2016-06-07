@@ -1,21 +1,26 @@
 from flask import Flask
 from flask import jsonify
-
+from flask import request
 
 from db import api as db_api
 from inventory import upgrades
 app = Flask(__name__)
 
+def generate_response(status, message):
+    message = {
+            'status': status,
+            'message': message
+    }
+    resp = jsonify(message)
+    resp.status_code = status
+    return resp
+
+
 @app.route('/cluster-status/<cluster_id>')
 def get_cluster_status(cluster_id):
     cluster = db_api.get_cluster_status(cluster_id)
     if not cluster:
-        message = {
-                'status': 404,
-                'message': 'Cluster %s not Found: ' % cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
 
     resp = jsonify(cluster)
@@ -25,12 +30,10 @@ def get_cluster_status(cluster_id):
 def get_upgrade_status(cluster_id):
     upgrade = db_api.get_upgrade_status(cluster_id)
     if not upgrade:
-        message = {
-                'status': 404,
-                'message': 'Upgrade for cluster %s not found: ' % cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(
+            404,
+            'Upgrade for cluster %s not found' % cluster_id
+        )
         return resp
 
     resp = jsonify(upgrade)
@@ -46,154 +49,133 @@ def get_discovery_methods():
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
     versions = db_api.get_upgrade_versions(cluster_id)
+    if not versions:
+        resp = generate_response(
+            404,
+            'Get upgrade version failed for cluster %s' % cluster_id
+        )
+        return resp
+
     resp = jsonify(versions)
     return resp
 
-@app.route('/discover-cluster/<disovery_method>', methods = ['POST'])
-def create_discovery_method(discovery_method):
+@app.route('/discover-cluster', methods = ['POST'])
+def create_discovery_method():
+    discovery_method = request.args.get('method')
     disc_method = db_api.create_discovery_method(discovery_method)
-    if not disc_methods:
-        message = {
-                'status': 404,#TODO probable should fix it later
-                'message': 'Failed to create discovery method: %s' %
-                    discovery_method,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+    if not disc_method:
+        resp = generate_response(
+            404,
+            'Failed to create discovery method: %s' % discovery_method
+        )
         return resp
 
-    resp = jsonify(disc_methods)
+    resp = jsonify(disc_method)
     resp.status_code = 201
     return resp
 
 @app.route('/upgrade-cluster/<cluster_id>', methods = ['POST'])
 def create_cluster_upgrade(cluster_id):
-    upgrade = db_api.create_cluster_upgrade(cluster_id)
+    to_version = request.args.get('version')
+    upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
     if not upgrade:
-        message = {
-                'status': 404,#TODO probable should fix it later
-                'message': 'Failed to create cluster upgrade for cluster: %s' %
-                    cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(
+            404,#TODO probable should fix it later
+            'Failed to create cluster upgrade for cluster: %s' % cluster_id
+        )
         return resp
 
     resp = jsonify(upgrade)
     resp.status_code = 201
     return resp
 
-@app.route('/upgrade-cancel/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-cancel/<cluster_id>', methods = ['PUT'])
 def cancel_cluster_upgrade(cluster_id):
     upgrade = db_api.cancel_cluster_upgrade(cluster_id)
     if not upgrade:
-        message = {
-                'status': 404,#TODO probably should fix it later
-                'message': 'Failed to cancel cluster upgrade for cluster: %s' %
-                    cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(
+            404,#TODO probably should fix it later
+            'Failed to cancel cluster upgrade for cluster: %s' % cluster_id
+        )
         return resp
 
-    status = inventory.cancel_upgrade(cluster_id)
+    status = upgrades.cancel_upgrade(cluster_id)
     if status:
         #TODO: cancel failed, probably should update cluster upgrade status
-        message = {
-                'status': 500,#TODO probably should fix it later
-                'message':
-                    'Failed to cancel cluster upgrade for cluster: %s'
-                    'with message %s' % (cluster_id, status)
-        }
-        resp = jsonify(message)
-        resp.status_code = 500
+        resp = generate_response(
+            500,#TODO probably should fix it later
+            'Failed to cancel cluster upgrade for cluster: %s'
+            'with message %s' % (cluster_id, status)
+        )
         return resp
 
     resp = jsonify(upgrade)
     return resp
 
-@app.route('/upgrade-continue/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-continue/<cluster_id>', methods = ['PUT'])
 def continue_cluster_upgrade(cluster_id):
     upgrade = db_api.continue_cluster_upgrade(cluster_id)
     if not upgrade:
-        message = {
-                'status': 404,#TODO probably should fix it later
-                'message': 'Failed to continue cluster upgrade '
-                'for cluster: %s' % cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(
+            404,#TODO probably should fix it later
+            'Failed to continue cluster upgrade for cluster: %s' % cluster_id
+        )
         return resp
 
-    status = inventory.continue_upgrade(cluster_id)
+    status = upgrades.continue_upgrade(cluster_id)
     if status:
         #TODO: continue failed, probably should update cluster upgrade status
-        message = {
-                'status': 500,#TODO probably should fix it later
-                'message':
-                    'Failed to continue cluster upgrade for cluster: %s'
-                    'with message %s' % (cluster_id, status)
-        }
-        resp = jsonify(message)
-        resp.status_code = 500
+        resp = generate_response(
+            500,#TODO probably should fix it later
+            'Failed to continue cluster upgrade for cluster %s '
+            'with message %s' % (cluster_id, status)
+        )
         return resp
 
     resp = jsonify(upgrade)
     return resp
 
-@app.route('/upgrade-pause/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-pause/<cluster_id>', methods = ['PUT'])
 def pause_cluster_upgrade(cluster_id):
     upgrade = db_api.pause_cluster_upgrade(cluster_id)
     if not upgrade:
-        message = {
-                'status': 404,#TODO probably should fix it later
-                'message': 'Failed to pause cluster upgrade for cluster: %s' %
-                    cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(
+            404,#TODO probably should fix it later
+            'Failed to pause cluster upgrade for cluster: %s' % cluster_id
+        )
         return resp
 
-    status = inventory.pause_upgrade(cluster_id)
+    status = upgrades.pause_upgrade(cluster_id)
     if status:
         #TODO: pause failed, probably should update cluster upgrade status
-        message = {
-                'status': 500,#TODO probably should fix it later
-                'message':
-                    'Failed to pause cluster upgrade for cluster: %s'
-                    'with message %s' % (cluster_id, status)
-        }
-        resp = jsonify(message)
-        resp.status_code = 500
+        resp = generate_response(
+            500,#TODO probably should fix it later
+            'Failed to pause cluster upgrade for cluster %s with message %s'
+            % (cluster_id, status)
+        )
         return resp
 
     resp = jsonify(upgrade)
     return resp
 
-@app.route('/upgrade-rollback/<cluster_id>', methods = ['POST'])
+@app.route('/upgrade-rollback/<cluster_id>', methods = ['PUT'])
 def rollback_cluster_upgrade(cluster_id):
     upgrade = db_api.rollback_cluster_upgrade(cluster_id)
     if not upgrade:
-        message = {
-                'status': 404,#TODO probably should fix it later
-                'message': 'Failed to rollback cluster upgrade'
-                    ' for cluster: %s' % cluster_id,
-        }
-        resp = jsonify(message)
-        resp.status_code = 404
+        resp = generate_response(
+            404,#TODO probably should fix it later
+            'Failed to rollback cluster upgrade for cluster %s' % cluster_id
+        )
         return resp
 
-    status = inventory.rollback_upgrade(cluster_id)
+    status = upgrades.rollback_upgrade(cluster_id)
     if status:
         #TODO: rollback failed, probably should update cluster upgrade status
-        message = {
-                'status': 500,#TODO probably should fix it later
-                'message':
-                    'Failed to rollback cluster upgrade for cluster: %s'
-                    'with message %s' % (cluster_id, status)
-        }
-        resp = jsonify(message)
-        resp.status_code = 500
+        resp = generate_response(
+            500,#TODO probably should fix it later
+            'Failed to rollback cluster upgrade for cluster: %s '
+            'with message %s' % (cluster_id, status)
+        )
         return resp
 
     resp = jsonify(upgrade)

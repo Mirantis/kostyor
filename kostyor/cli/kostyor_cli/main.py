@@ -1,6 +1,4 @@
 #!/usr/bin/python
-import argparse
-import os
 import requests
 import sys
 import ConfigParser
@@ -12,69 +10,21 @@ from cliff.commandmanager import CommandManager
 
 CONF = ConfigParser.ConfigParser()
 CONF.read("conf.ini")
-host = CONF.get('global', 'host')
-port = CONF.get('global', 'port')
+try:
+    host = CONF.get('global', 'host')
+except:
+    host = "localhost"
 
-
-# Decorators for actions
-def args(*args, **kwargs):
-    def _decorator(func):
-        func.__dict__.setdefault('args', []).insert(0, (args, kwargs))
-        return func
-    return _decorator
-
-
-def methods_of(obj):
-    """Get all callable methods of an object that don't start with underscore
-    returns a list of tuples of the form (method_name, method, description)
-    """
-    result = []
-    for i in dir(obj):
-        if callable(getattr(obj, i)) and not i.startswith('_'):
-            result.append(
-                (
-                    obj.action,
-                    getattr(obj, i),
-                    obj.description
-                )
-            )
-    return result
+try:
+    port = CONF.get('global', 'port')
+except:
+    port = 80
 
 
 def _make_request_with_cluser_id(http_method, endpoint, cluster_id):
     req_method = getattr(requests, http_method)
     return req_method('http://{}:{}/{}/{}'.format(host, port, endpoint,
                                                   cluster_id))
-
-# creating formated output for resulting tables
-# TODO(sc68cal) replace this with prettytable
-# https://code.google.com/archive/p/prettytable/
-def print_result(items):
-    if not isinstance(items, list):
-        items = [items]
-    width = {}
-    for item in items:
-        for k, v in item.items():
-            if k not in width:
-                width[k] = len(v)
-            else:
-                if len(v) > width[k]:
-                    width[k] = len(v)
-    for k in items[0]:
-        if len(k) > width[k]:
-            width[k] = len(k)
-    total_width = len(width) * 3 + 1 + sum(width.itervalues())
-
-    print '-' * total_width
-    for k in items[0]:
-        print '| {:^{width}}'.format(k, width=width[k]),
-    print '|'
-    print '-' * total_width
-    for item in items:
-        for k, v in item.items():
-            print '| {:^{width}}'.format(v, width=width[k]),
-        print '|'
-    print '-' * total_width
 
 
 class KostyorApp(App):
@@ -98,47 +48,47 @@ class KostyorApp(App):
             self.LOG.debug('got an error: %s', err)
 
 
-
 class ClusterDiscovery(Command):
     description = ("Discover cluster using specified discovery "
                    "method <discovery_method> and setting it's "
                    "name to <cluster_name>")
     action = "discover-cluster"
 
-    @staticmethod
-    @args('--discovery_method', metavar='<discovery_method>',
-          help="Discovery method that should be used for discovery of cluster")
-    @args('--cluster_name', metavar='<cluster_name>', help='Cluster name')
     def discover(discovery_method, cluster_name, *args):
         # TODO validate discovery method
         # TODO run discovery using chosen method
         pass
 
 
-class ClusterStatus(Command):
+class ClusterList(Lister):
+    def take_action(self, parsed_args):
+        print(parsed_args)
+        return (('Cluster Name', 'Cluster ID', 'Status'),
+                (("Jay's Lab",
+                  "3e99896e-3199-11e6-ac61-9e71128cae77", "READY"),
+                ("Sean's Lab",
+                 "3e998d4c-3199-11e6-ac61-9e71128cae77", "READY")))
+
+
+class ClusterStatus(Lister):
     description = ("Returns information about a cluster as a list of nodes "
                    "belonging to specified cluster and list of services "
                    "running on these nodes")
     action = "cluster-status"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def get_status(cluster_id):
         r = _make_request_with_cluser_id('get', 'cluster-status', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get cluster status: %s' % message)
         result = r.json()
-        print_result(result)
+        return result
 
 
 class ClusterUpgrade(Command):
     description = "Kicks off an upgrade of specified cluster"
     action = "upgrade-cluster"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
-    @args('--to_version', metavar='<to_version>')
     def upgrade(cluster_id, to_version):
         r = _make_request_with_cluser_id('post', 'upgrade-cluster', cluster_id)
         if r.status_code != 201:
@@ -151,15 +101,13 @@ class UpgradeStatus(Command):
     description = "Returns the status of a running upgrade"
     action = "upgrade-status"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def get_status(cluster_id):
         r = _make_request_with_cluser_id('get', 'upgrade-status', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get upgrade status: %s' % message)
         result = r.json()
-        print_result(result)
+        return result
 
 
 class PauseUpgrade(Command):
@@ -167,8 +115,6 @@ class PauseUpgrade(Command):
                    "that it can be continued and aborted")
     action = "upgrade-pause"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def pause(cluster_id):
         r = _make_request_with_cluser_id('put', 'upgrade-pause', cluster_id)
         if r.status_code != 200:
@@ -183,8 +129,6 @@ class RollbackUpgrade(Command):
                    " versions")
     action = "upgrade-rollback"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def rollback(cluster_id):
         r = _make_request_with_cluser_id('put', 'upgrade-rollback', cluster_id)
         if r.status_code != 200:
@@ -198,8 +142,6 @@ class CancelUpgrade(Command):
                    "running upgrades procedures will be finished")
     action = "upgrade-cancel"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def cancel(cluster_id):
         r = _make_request_with_cluser_id('put', 'upgrade-cancel', cluster_id)
         if r.status_code != 200:
@@ -212,8 +154,6 @@ class ContinueUpgrade(Command):
     description = "Continues paused upgrade"
     action = "upgrade-continue"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def continue_upgrade(cluster_id):
         r = _make_request_with_cluser_id('put', 'upgrade-continue', cluster_id)
         if r.status_code != 200:
@@ -226,8 +166,6 @@ class DiscoveryMethod(Command):
     description = "Kicks off an upgrade of specified cluster"
     action = "create-discovery-method"
 
-    @staticmethod
-    @args('--method', metavar='<method>')
     def create(method):
         r = requests.post(
             'http://{host}:{port}/discover-cluster'.format(
@@ -245,8 +183,6 @@ class ListUpgradeVersions(Lister):
                    "upgraded to")
     action = "list-upgrade-versions"
 
-    @staticmethod
-    @args('--cluster_id', metavar='<cluster_id>')
     def list(cluster_id):
         r = _make_request_with_cluser_id('get', 'upgrade-versions', cluster_id)
         if r.status_code != 200:
@@ -254,7 +190,7 @@ class ListUpgradeVersions(Lister):
             raise Exception('Failed to get list of upgrade versions: %s'
                             % message)
         result = r.json()
-        print_result(result['items'])
+        return result
 
 
 class ListDiscoveryMethods(Lister):
@@ -274,22 +210,7 @@ class ListDiscoveryMethods(Lister):
             raise Exception('Failed to get list of discovery methods: %s'
                             % message)
         result = r.json()
-        print_result(result['items'])
-
-CMD_OBJS = [ClusterDiscovery, ClusterStatus, ClusterUpgrade, UpgradeStatus,
-            PauseUpgrade, RollbackUpgrade, CancelUpgrade, ContinueUpgrade,
-            DiscoveryMethod, ListUpgradeVersions, ListDiscoveryMethods]
-
-
-def add_command_parsers(parser):
-    subparsers = parser.add_subparsers(help='sub-command help')
-    for cmd in CMD_OBJS:
-        command_object = cmd()
-        for action, action_fn, desc in methods_of(command_object):
-            cmd_parser = subparsers.add_parser(action, description=desc)
-            for args, kwargs in getattr(action_fn, 'args', []):
-                cmd_parser.add_argument(*args, **kwargs)
-            cmd_parser.set_defaults(action_fn=action_fn)
+        return result
 
 
 def main(argv=sys.argv[1:]):

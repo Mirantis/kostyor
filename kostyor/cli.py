@@ -5,6 +5,11 @@ import requests
 import sys
 import ConfigParser
 
+from cliff.command import Command
+from cliff.lister import Lister
+from cliff.app import App
+from cliff.commandmanager import CommandManager
+
 CONF = ConfigParser.ConfigParser()
 CONF.read("conf.ini")
 host = CONF.get('global', 'host')
@@ -72,7 +77,29 @@ def print_result(items):
     print '-' * total_width
 
 
-class ClusterDiscovery(object):
+class KostyorApp(App):
+    def __init__(self):
+        super(KostyorApp, self).__init__(
+            description='Kostyor cli app',
+            version='0.1',
+            command_manager=CommandManager('kostyor.cli'),
+            deferred_help=True,
+            )
+
+    def initialize_app(self, argv):
+        self.LOG.debug('initialize_app')
+
+    def prepare_to_run_command(self, cmd):
+        self.LOG.debug('prepare_to_run_command %s', cmd.__class__.__name__)
+
+    def clean_up(self, cmd, result, err):
+        self.LOG.debug('clean_up %s', cmd.__class__.__name__)
+        if err:
+            self.LOG.debug('got an error: %s', err)
+
+
+
+class ClusterDiscovery(Command):
     description = ("Discover cluster using specified discovery "
                    "method <discovery_method> and setting it's "
                    "name to <cluster_name>")
@@ -88,7 +115,7 @@ class ClusterDiscovery(object):
         pass
 
 
-class ClusterStatus(object):
+class ClusterStatus(Command):
     description = ("Returns information about a cluster as a list of nodes "
                    "belonging to specified cluster and list of services "
                    "running on these nodes")
@@ -105,7 +132,7 @@ class ClusterStatus(object):
         print_result(result)
 
 
-class ClusterUpgrade(object):
+class ClusterUpgrade(Command):
     description = "Kicks off an upgrade of specified cluster"
     action = "upgrade-cluster"
 
@@ -120,7 +147,7 @@ class ClusterUpgrade(object):
         ClusterStatus.get_status(cluster_id)
 
 
-class UpgradeStatus(object):
+class UpgradeStatus(Command):
     description = "Returns the status of a running upgrade"
     action = "upgrade-status"
 
@@ -135,7 +162,7 @@ class UpgradeStatus(object):
         print_result(result)
 
 
-class PauseUpgrade(object):
+class PauseUpgrade(Command):
     description = ("Pauses running upgrade, so that it can be continued, so "
                    "that it can be continued and aborted")
     action = "upgrade-pause"
@@ -150,7 +177,7 @@ class PauseUpgrade(object):
         ClusterStatus.get_status(cluster_id)
 
 
-class RollbackUpgrade(object):
+class RollbackUpgrade(Command):
     description = ("Rollbacks running or paused upgrade, attempting to move "
                    "all the components on all cluster nodes to it's initial "
                    " versions")
@@ -166,7 +193,7 @@ class RollbackUpgrade(object):
         ClusterStatus.get_status(cluster_id)
 
 
-class CancelUpgrade(object):
+class CancelUpgrade(Command):
     description = ("Cancels running or paused upgrade. All the currently "
                    "running upgrades procedures will be finished")
     action = "upgrade-cancel"
@@ -181,7 +208,7 @@ class CancelUpgrade(object):
         ClusterStatus.get_status(cluster_id)
 
 
-class ContinueUpgrade(object):
+class ContinueUpgrade(Command):
     description = "Continues paused upgrade"
     action = "upgrade-continue"
 
@@ -195,7 +222,7 @@ class ContinueUpgrade(object):
         ClusterStatus.get_status(cluster_id)
 
 
-class DiscoveryMethod(object):
+class DiscoveryMethod(Command):
     description = "Kicks off an upgrade of specified cluster"
     action = "create-discovery-method"
 
@@ -213,7 +240,7 @@ class DiscoveryMethod(object):
             raise Exception(message)
 
 
-class ListUpgradeVersions(object):
+class ListUpgradeVersions(Lister):
     description = ("Returns list of available versions cluster can be "
                    "upgraded to")
     action = "list-upgrade-versions"
@@ -230,7 +257,7 @@ class ListUpgradeVersions(object):
         print_result(result['items'])
 
 
-class ListDiscoveryMethods(object):
+class ListDiscoveryMethods(Lister):
     description = ("Returns a list of available methods to discover the "
                    "hosts and services that comprise an OpenStack cluster")
     action = "list-discovery-methods"
@@ -266,23 +293,9 @@ def add_command_parsers(parser):
 
 
 def main(argv=sys.argv[1:]):
-    parser = argparse.ArgumentParser(
-        description='Tool for dealing with openstack cluster upgrades'
-    )
-    add_command_parsers(parser)
-    parsed_args = parser.parse_args(argv)
-    action = parsed_args.action_fn
-    del parsed_args.action_fn
-    """ validating args for commands. The only parameter of the commands that
-        can be set to None here is discovery_method, so all the remaining
-        parameters should be set to some value """
-    for arg, value in vars(parsed_args).items():
-        if arg != 'discovery_method' and value is None:
-            # TODO print help for exact command here
-            parser.print_help()
-            exit(os.EX_USAGE)
+    myapp = KostyorApp()
+    return myapp.run(argv)
 
-    action(**vars(parsed_args))
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

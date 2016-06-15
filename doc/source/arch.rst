@@ -95,7 +95,7 @@ health.
 
     * Uses Puppet mechanism
   * CratonInventory
-    * Uses [Craton](https://github.com/rackerlabs/craton/) for inventory management
+    * Uses `Craton <https://github.com/rackerlabs/craton/> `_ for inventory management
 
 Types of Upgrades
 =================

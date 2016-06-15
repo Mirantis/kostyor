@@ -220,6 +220,11 @@ class ListDiscoveryMethods(Lister):
                    "hosts and services that comprise an OpenStack cluster")
     action = "list-discovery-methods"
 
+    def take_action(self, parsed_args):
+        return (('Discovery Method', 'Description'),
+                (('OpenStack', 'OpenStack based discovery using Keystone API'),)
+                )
+
     def list():
         r = requests.get(
             'http://{host}:{port}/discovery-methods'.format(

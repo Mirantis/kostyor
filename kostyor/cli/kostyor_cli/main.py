@@ -7,6 +7,7 @@ from cliff.command import Command
 from cliff.lister import Lister
 from cliff.app import App
 from cliff.commandmanager import CommandManager
+from cliff.show import ShowOne
 
 CONF = ConfigParser.ConfigParser()
 CONF.read("conf.ini")
@@ -62,7 +63,6 @@ class ClusterDiscovery(Command):
 
 class ClusterList(Lister):
     def take_action(self, parsed_args):
-        print(parsed_args)
         return (('Cluster Name', 'Cluster ID', 'Status'),
                 (("Jay's Lab",
                   "3e99896e-3199-11e6-ac61-9e71128cae77", "READY"),
@@ -70,11 +70,28 @@ class ClusterList(Lister):
                  "3e998d4c-3199-11e6-ac61-9e71128cae77", "READY")))
 
 
-class ClusterStatus(Lister):
+class ClusterStatus(ShowOne):
     description = ("Returns information about a cluster as a list of nodes "
                    "belonging to specified cluster and list of services "
                    "running on these nodes")
     action = "cluster-status"
+
+    def get_parser(self, prog_name):
+        parser = super(ClusterStatus, self).get_parser(prog_name)
+        parser.add_argument('cluster-id')
+        return parser
+
+    def take_action(self, parsed_args):
+
+        cluster_id = parsed_args.cluster_id
+
+        columns = ('Cluster ID', 'Cluster Name', 'OpenStack Version', 'Status',)
+
+        data = ("3e998d4c-3199-11e6-ac61-9e71128cae77", "Sean's Lab", "Mitaka",
+                "READY",)
+
+        return (columns, data)
+
 
     def get_status(cluster_id):
         r = _make_request_with_cluser_id('get', 'cluster-status', cluster_id)
@@ -183,6 +200,11 @@ class ListUpgradeVersions(Lister):
                    "upgraded to")
     action = "list-upgrade-versions"
 
+    def take_action(self, parsed_args):
+        return (('From Version', 'To Version',), (('Liberty', 'Mitaka'),
+                                                  ('Mitaka', 'Newton'))
+                )
+
     def list(cluster_id):
         r = _make_request_with_cluser_id('get', 'upgrade-versions', cluster_id)
         if r.status_code != 200:
@@ -198,7 +220,6 @@ class ListDiscoveryMethods(Lister):
                    "hosts and services that comprise an OpenStack cluster")
     action = "list-discovery-methods"
 
-    @staticmethod
     def list():
         r = requests.get(
             'http://{host}:{port}/discovery-methods'.format(

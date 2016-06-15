@@ -53,6 +53,7 @@ setup(
         'kostyor.cli': [
             'cluster-status = kostyor_cli.main:ClusterStatus',
             'cluster-list = kostyor_cli.main:ClusterList',
+            'list-upgrade-versions = kostyor_cli.main:ListUpgradeVersions'
         ],
     },
 

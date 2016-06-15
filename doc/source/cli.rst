@@ -157,7 +157,8 @@ could have multiple nova-cpus - with liberty, mitaka
 $ kostyor cluster-status <cluster-id>
 
 * Overall State
-Returns: 
+
+  Returns:
     * READY FOR UPGRADE
     * UPGRADE IN PROGRESS
     * UPGRADE PAUSED

@@ -78,7 +78,7 @@ class ClusterStatus(ShowOne):
 
     def get_parser(self, prog_name):
         parser = super(ClusterStatus, self).get_parser(prog_name)
-        parser.add_argument('cluster-id')
+        parser.add_argument('cluster_id')
         return parser
 
     def take_action(self, parsed_args):

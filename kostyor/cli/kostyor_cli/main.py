@@ -130,10 +130,13 @@ class UpgradeStatus(Lister):
 
         columns = ('Service', 'Version', 'Count')
 
-        data = (('nova-cpu', 'liberty', 20),('nova-cpu', 'mitaka', 3))
+        data = (('nova-cpu', 'liberty', 20),
+                ('nova-cpu', 'mitaka', 3),
+                ('neutron-ovs-agent', 'liberty', 20),
+                ('neutron-ovs-agent', 'mitaka', 3),
+                )
 
         return (columns, data)
-
 
     def get_status(upgrade_id):
         r = _make_request_with_cluser_id('get', 'upgrade-status', upgrade_id)

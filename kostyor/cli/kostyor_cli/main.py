@@ -114,12 +114,27 @@ class ClusterUpgrade(Command):
         ClusterStatus.get_status(cluster_id)
 
 
-class UpgradeStatus(Command):
+class UpgradeStatus(Lister):
     description = "Returns the status of a running upgrade"
     action = "upgrade-status"
 
-    def get_status(cluster_id):
-        r = _make_request_with_cluser_id('get', 'upgrade-status', cluster_id)
+    def get_parser(self, prog_name):
+        parser = super(UpgradeStatus, self).get_parser(prog_name)
+        parser.add_argument('upgrade_id')
+        return parser
+
+    def take_action(self, parsed_args):
+        upgrade_id = parsed_args.upgrade_id
+
+        columns = ('Service', 'Version', 'Count')
+
+        data = (('nova-cpu', 'liberty', 20),('nova-cpu', 'mitaka', 3))
+
+        return (columns, data)
+
+
+    def get_status(upgrade_id):
+        r = _make_request_with_cluser_id('get', 'upgrade-status', upgrade_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get upgrade status: %s' % message)

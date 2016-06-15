@@ -63,11 +63,13 @@ class ClusterDiscovery(Command):
 
 class ClusterList(Lister):
     def take_action(self, parsed_args):
-        return (('Cluster Name', 'Cluster ID', 'Status'),
-                (("Jay's Lab",
-                  "3e99896e-3199-11e6-ac61-9e71128cae77", "READY"),
-                ("Sean's Lab",
-                 "3e998d4c-3199-11e6-ac61-9e71128cae77", "READY")))
+        columns = ('Cluster Name', 'Cluster ID', 'Status')
+
+        data = (("Jay's Lab", "3e99896e-3199-11e6-ac61-9e71128cae77", "READY"),
+                ("Sean's Lab", "3e998d4c-3199-11e6-ac61-9e71128cae77",
+                 "READY"))
+
+        return (columns, data)
 
 
 class ClusterStatus(ShowOne):
@@ -216,9 +218,11 @@ class ListUpgradeVersions(Lister):
     action = "list-upgrade-versions"
 
     def take_action(self, parsed_args):
-        return (('From Version', 'To Version',), (('Liberty', 'Mitaka'),
-                                                  ('Mitaka', 'Newton'))
-                )
+        columns = ('From Version', 'To Version',)
+
+        data = (('Liberty', 'Mitaka'), ('Mitaka', 'Newton'))
+
+        return (columns, data)
 
     def list(cluster_id):
         r = _make_request_with_cluser_id('get', 'upgrade-versions', cluster_id)
@@ -236,9 +240,14 @@ class ListDiscoveryMethods(Lister):
     action = "list-discovery-methods"
 
     def take_action(self, parsed_args):
-        return (('Discovery Method', 'Description'),
-                (('OpenStack', 'OpenStack based discovery using Keystone API'),)
-                )
+        columns = ('Discovery Method', 'Description')
+
+        data = (('OpenStack', 'OpenStack based discovery using Keystone API'),
+                ('Ansible-Inventory', "Discover a cluster, via ansible"),
+                ('Puppet', 'Discover a cluster, via puppet'),
+                ('Fuel', 'Discover a cluster, via Fuel'))
+
+        return (columns, data)
 
     def list():
         r = requests.get(

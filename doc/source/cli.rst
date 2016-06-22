@@ -34,9 +34,17 @@ Commands
     OpenStack it is running, if it is undergoing an upgrade, etc..
 
 
-  :: 
+  ::
 
-      kostyor cluster-status home_lab
+      (kostyor) cluster-status 3e998d4c-3199-11e6-ac61-9e71128cae77
+      +-------------------+--------------------------------------+
+      | Field             | Value                                |
+      +-------------------+--------------------------------------+
+      | Cluster ID        | 3e998d4c-3199-11e6-ac61-9e71128cae77 |
+      | Cluster Name      | Sean's Lab                           |
+      | OpenStack Version | Mitaka                               |
+      | Status            | READY                                |
+      +-------------------+--------------------------------------+
 
 
   Shows information about <cluster_id>
@@ -49,7 +57,7 @@ Commands
 
 
   ::
-      
+
       kostyor upgrade-cluster home_lab mitaka
 
 * upgrade-status <upgrade_uuid>
@@ -59,7 +67,23 @@ Commands
 
   ::
 
-      kostyor upgrade-status UPGRADE_UUID
+      (kostyor) upgrade-status 5f217a2f-3213-22a9-ac61-7d64272dbc22
+      +----------+---------+-------+
+      | Service  | Version | Count |
+      +----------+---------+-------+
+      | nova-cpu | liberty |    20 |
+      | nova-cpu | mitaka  |     3 |
+      +----------+---------+-------+
+
+  Returns something similar to:
+
+  * https://miracloud.slack.com/files/scollins/F1BEF48JW/20160524_115502_hdr.jpg
+
+  * https://miracloud.slack.com/files/scollins/F1BE9DNTB/20160524_120906_hdr.jpg
+
+  * https://miracloud.slack.com/files/scollins/F1BEFCHR8/20160524_121523_hdr.jpg
+
+  * https://miracloud.slack.com/files/scollins/F1BE0BB5W/20160524_121055_hdr.jpg
 
 * upgrade-pause <cluster_id>
 
@@ -100,15 +124,29 @@ Commands
 
       kostyor upgrade-continue home_lab
 
+* list-upgrade-versions
 
-* list-upgrade-versions <cluster_id>
-
-  * Returns list of available versions to upgrade for cluster with
-    specified id
+  * Show the supported versions that Kostyor is able to upgrade
 
   ::
 
-      kostyor list-upgrade-versions home_lab
+      (kostyor) list-upgrade-versions
+      +--------------+------------+
+      | From Version | To Version |
+      +--------------+------------+
+      | Liberty      | Mitaka     |
+      | Mitaka       | Newton     |
+      +--------------+------------+
+
+
+* check-upgrade <cluster_id>
+
+  * Returns list of available versions to upgrade for a cluster with
+    specified id to be upgraded to
+
+  ::
+
+      kostyor check-upgrade home_lab
 
 
 * list-discovery-methods
@@ -118,84 +156,82 @@ Commands
 
   ::
 
-      kostyor list-discovery-methods
+      (kostyor) list-discovery-methods
+      +-------------------+----------------------------------------------+
+      | Discovery Method  | Description                                  |
+      +-------------------+----------------------------------------------+
+      | OpenStack         | OpenStack based discovery using Keystone API |
+      | Ansible-Inventory | Discover a cluster, via ansible              |
+      | Puppet            | Discover a cluster, via puppet               |
+      | Fuel              | Discover a cluster, via Fuel                 |
+      +-------------------+----------------------------------------------+
 
-$ kostyor list-upgrades
+* cluster-status
 
+  * Overall State
 
-cluster-status
+    Returns:
+      * READY FOR UPGRADE
+      * UPGRADE IN PROGRESS
+      * UPGRADE PAUSED
+      * UPGRADE ERROR
+      * UPGRADE CANCELLED
 
-* region name
-* openstack-versions
-* state
-      * active
-      * maintenance
-      * error
+  * Most recent upgrade UUID
+  * region name
+  * openstack-versions
+  * state
 
-
-        kostyor check-upgrade <cluster_id>
-
-        returns:
-
-        state
-          in progress
-          ready
-      
-        
-
-cluster-component-list <cluster_id>
-
-returns 
-
-* component name
-* component version
-* can be upgraded?
-
-could have multiple nova-cpus - with liberty, mitaka 
+        * active
+        * maintenance
+        * error
 
 
-$ kostyor cluster-status <cluster-id>
+  Returns something similar to:
+  https://miracloud.slack.com/files/scollins/F1BDVR3QW/20160524_115934_hdr.jpg
 
-* Overall State
+  example: $ kostyor cluster-status sean_devstack_lab nova-cpu
 
-  Returns:
-    * READY FOR UPGRADE
-    * UPGRADE IN PROGRESS
-    * UPGRADE PAUSED
-    * UPGRADE ERROR
-    * UPGRADE CANCELLED
-* Most recent upgrade UUID 
-
-$ kostyor upgrade-list <cluster-id> 
-example: $ kostyor upgrade-list sean_devstack_lab
-
-Returns:
-    * AAAA: liberty to mitaka -> failed
-    * BBBB: liberty to mitaka -> cancelled
-    * CCCC liberty to mitaka -> successful
+    * For each nova-cpu in the cluster:
+        * list the version of nova-cpu
+        * instances running
+        * # of instances to migrate off
 
 
-$ kostyor cluster-status <cluster-id> <service>
+    ::
 
-Returns something similar to:
-https://miracloud.slack.com/files/scollins/F1BDVR3QW/20160524_115934_hdr.jpg
 
-example: $ kostyor cluster-status sean_devstack_lab nova-cpu
+        (kostyor) cluster-status 3e998d4c-3199-11e6-ac61-9e71128cae77
+        +-------------------+--------------------------------------+
+        | Field             | Value                                |
+        +-------------------+--------------------------------------+
+        | Cluster ID        | 3e998d4c-3199-11e6-ac61-9e71128cae77 |
+        | Cluster Name      | Sean's Lab                           |
+        | OpenStack Version | Mitaka                               |
+        | Status            | READY                                |
+        +-------------------+--------------------------------------+
 
-* For each nova-cpu in the cluster:
-    * list the version of nova-cpu
-    * instances running
-    * # of instances to migrate off
 
-$ kostyor cluster-list 
+* cluster-component-list <cluster_id>
 
-* sean's devstack lab
-* jay's devstack lab
+    returns
 
-$ kostyor upgrade-status <upgrade_uuid>
+    + component name
+    + component version
+    + can be upgraded?
 
-Returns something similar to:
-https://miracloud.slack.com/files/scollins/F1BEF48JW/20160524_115502_hdr.jpg
-https://miracloud.slack.com/files/scollins/F1BE9DNTB/20160524_120906_hdr.jpg
-https://miracloud.slack.com/files/scollins/F1BEFCHR8/20160524_121523_hdr.jpg
-https://miracloud.slack.com/files/scollins/F1BE0BB5W/20160524_121055_hdr.jpg
+    could have multiple nova-cpus - with liberty, mitaka
+
+
+
+* cluster-list
+
+  ::
+
+      (kostyor) cluster-list
+      +--------------+--------------------------------------+--------+
+      | Cluster Name | Cluster ID                           | Status |
+      +--------------+--------------------------------------+--------+
+      | Jay's Lab    | 3e99896e-3199-11e6-ac61-9e71128cae77 | READY  |
+      | Sean's Lab   | 3e998d4c-3199-11e6-ac61-9e71128cae77 | READY  |
+      +--------------+--------------------------------------+--------+

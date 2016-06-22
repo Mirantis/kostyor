@@ -154,3 +154,11 @@ Handling Failures
 
   * Monitoring tenant instances - if outage occurs - pause the
     upgrade?
+
+
+REST API considerations
+=======================
+
+* Consider using `Swagger <http://swagger.io/>`_?
+* `Flask-restful <https://github.com/flask-restful/flask-restful>`_
+* `Flask-swagger <https://github.com/gangverk/flask-swagger>`_

@@ -65,9 +65,7 @@ class ClusterList(Lister):
     def take_action(self, parsed_args):
         columns = ('Cluster Name', 'Cluster ID', 'Status')
 
-        data = (("Jay's Lab", "3e99896e-3199-11e6-ac61-9e71128cae77", "READY"),
-                ("Sean's Lab", "3e998d4c-3199-11e6-ac61-9e71128cae77",
-                 "READY"))
+        data = requests.get('http://{}:{}/cluster-list'.format(host, port))
 
         return (columns, data)
 

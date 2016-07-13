@@ -182,5 +182,12 @@ def rollback_cluster_upgrade(cluster_id):
     return resp
 
 
+@app.route('/cluster-list', methods=['GET'])
+def cluster_list():
+    clusters = db_api.get_clusters()
+    if clusters:
+        return jsonify(clusters)
+
+
 if __name__ == '__main__':
     app.run()

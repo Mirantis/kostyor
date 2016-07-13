@@ -46,3 +46,8 @@ def pause_cluster_upgrade(cluster_id):
 
 def rollback_cluster_upgrade(cluster_id):
     return {'id': cluster_id, 'status': 'rolling back'}
+
+def get_clusters():
+    return {'clusters': [{'id': 'TEST',
+                         'name': 'Fake Cluster',
+                         'status': 'READY'}] }

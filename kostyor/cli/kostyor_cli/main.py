@@ -66,8 +66,10 @@ class ClusterList(Lister):
         columns = ('Cluster Name', 'Cluster ID', 'Status')
 
         data = requests.get('http://{}:{}/cluster-list'.format(host, port))
+        clusters = data.json()['clusters']
+        output = ((i['name'], i['id'], i['status']) for i in clusters)
 
-        return (columns, data)
+        return (columns, output)
 
 
 class ClusterStatus(ShowOne):

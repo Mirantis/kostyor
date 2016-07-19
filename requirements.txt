@@ -1,7 +1,9 @@
+ConfigParser
+enum34
+markupsafe
 python-keystoneclient
 python-novaclient
 python-neutronclient
 pbr
-cliff
-requests
+pytz
 flask

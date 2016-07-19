@@ -40,7 +40,7 @@ class Service(Base, HasId):
     __tablename__ = 'services'
 
     name = sa.Column(sa.String(255))
-    host_id = sa.Column(sa.String(255), sa.ForeignKey('hosts.id'))
+    host_id = sa.Column(sa.ForeignKey('hosts.id'))
 
     version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
 

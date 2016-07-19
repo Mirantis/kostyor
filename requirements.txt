@@ -6,6 +6,4 @@ python-novaclient
 python-neutronclient
 pbr
 pytz
-cliff
-requests
 flask

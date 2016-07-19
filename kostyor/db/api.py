@@ -9,8 +9,9 @@
 def get_cluster_status(cluster_id):
     #TODO fix it later
     return {'id': cluster_id,
-            'name': 'tmp',
-            'status': 'ready'}
+            'name': "Sean's Lab",
+            'version': "Mitaka",
+            'status': "READY",}
 
 def get_upgrade_status(cluster_id):
     return {'id': cluster_id, 'status': 'upgrading'}

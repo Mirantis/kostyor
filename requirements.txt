@@ -7,3 +7,4 @@ python-neutronclient
 pbr
 pytz
 flask
+six

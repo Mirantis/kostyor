@@ -1,6 +1,7 @@
 import abc
 import re
 
+from six.moves import map
 
 from keystoneclient.v2_0 import client as k_client
 from novaclient import client as n_client
@@ -84,11 +85,11 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         """ Uses the Nova REST API to discover agents and their location """
         client = n_client.Client(self.OS_COMPUTE_API_VERSION,
                                  session=self.session)
-        return map(lambda service: (service.host, service.binary),
-                   client.services.list())
+        return list(map(lambda service: (service.host, service.binary),
+                   client.services.list()))
 
     def discover_neutron(self):
         """ Use the Neutron REST API to discover agents and their location """
         client = mutnauq_client.Client(session=self.session)
-        return map(lambda agent: (agent['host'], agent['binary']),
-                   client.list_agents()['agents'])
+        return list(map(lambda agent: (agent['host'], agent['binary']),
+                   client.list_agents()['agents']))

@@ -8,4 +8,5 @@ pbr
 pytz
 flask
 six
-oslo_utils
+oslo.utils
+sqlalchemy

@@ -58,3 +58,19 @@ class UpgradeTask(Base, HasId):
 
     cluster = orm.relationship(Cluster, backref=orm.backref('clusters',
                                                             cascade='delete'))
+
+
+class ServiceUpgradeRecord(Base, HasId):
+    __tablename__ = 'service_upgrade_records'
+
+    service_id = sa.Column(sa.ForeignKey('services.id'))
+    upgrade_task_id = sa.Column(sa.ForeignKey('upgrade_task.id'))
+
+    service = orm.relationship(Service,
+                               backref=orm.backref('services',
+                                                   cascade='delete'))
+    upgrade = orm.relationship(UpgradeTask,
+                               backref=orm.backref('upgrade_tasks',
+                                                   cascade='delete'))
+
+    status = sa.Column(sa.Enum(*constants.STATUSES))

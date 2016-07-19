@@ -18,6 +18,8 @@ class HasId(object):
 
 
 class Cluster(Base, HasId):
+    __tablename__ = 'clusters'
+
     name = sa.Column(sa.String(255))
     version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
 
@@ -25,31 +27,34 @@ class Cluster(Base, HasId):
 
 
 class Host(Base, HasId):
+    __tablename__ = 'hosts'
 
     hostname = sa.Column(sa.String(255))
-    cluster_id = sa.Column(sa.ForeignKey('cluster.id'))
+    cluster_id = sa.Column(sa.ForeignKey('clusters.id'))
 
-    cluster = orm.relationship(Cluster, backref=orm.backref("cluster",
-                                                            cascade="delete"))
+    cluster = orm.relationship(Cluster, backref=orm.backref('clusters',
+                                                            cascade='delete'))
 
 
 class Service(Base, HasId):
+    __tablename__ = 'services'
+
     name = sa.Column(sa.String(255))
-    host_id = sa.Column(sa.String(255), sa.ForeignKey('host.id'))
+    host_id = sa.Column(sa.String(255), sa.ForeignKey('hosts.id'))
 
     version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
 
     host = orm.relationship(Host,
-                            backref=orm.backref("host", cascade="delete"))
+                            backref=orm.backref('hosts', cascade='delete'))
 
 
 class UpgradeTask(Base, HasId):
-    cluster_id = sa.Column(sa.ForeignKey('cluster.id'))
+    __tablename__ = 'upgrade_tasks'
+    cluster_id = sa.Column(sa.ForeignKey('clusters.id'))
     from_version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
     to_version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
     upgrade_start_time = sa.Column(sa.DateTime)
-    # TODO(sc68cal) Think of a better column name?
     upgrade_end_time = sa.Column(sa.DateTime)
 
-    cluster = orm.relationship(Cluster, backref=orm.backref("cluster",
-                                                            cascade="delete"))
+    cluster = orm.relationship(Cluster, backref=orm.backref('clusters',
+                                                            cascade='delete'))

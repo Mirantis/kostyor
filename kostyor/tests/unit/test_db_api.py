@@ -1,4 +1,4 @@
-from kostyor.db import models
+from kostyor.db.sqlalchemy import models
 
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker

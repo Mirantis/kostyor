@@ -2,6 +2,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
+from kostyor.common import constants
 from kostyor.db import api as db_api
 from kostyor.inventory import upgrades
 
@@ -62,6 +63,11 @@ def get_upgrade_versions(cluster_id):
 
     resp = jsonify(versions)
     return resp
+
+
+@app.route('/list-upgrade-versions')
+def list_upgrade_versions():
+    return jsonify(constants.OPENSTACK_VERSIONS)
 
 
 @app.route('/discover-cluster', methods=['POST'])

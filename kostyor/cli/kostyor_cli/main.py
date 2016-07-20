@@ -229,19 +229,20 @@ class DiscoveryMethod(Command):
 
 
 class ListUpgradeVersions(Lister):
-    description = ("Returns list of available versions cluster can be "
-                   "upgraded to")
+    description = ("Show the supported versions that Kostyor is able to "
+                   "upgrade")
     action = "list-upgrade-versions"
 
     def take_action(self, parsed_args):
         columns = ('From Version', 'To Version',)
-
-        data = (('Liberty', 'Mitaka'), ('Mitaka', 'Newton'))
-
-        return (columns, data)
+        data = requests.get(
+            'http://{}:{}/list-upgrade-versions'.format(host, port)).json()
+        data = [i.capitalize() for i in data]
+        versions = ((data[i], data[i+1]) for i in xrange(len(data) - 1))
+        return (columns, versions)
 
     def list(cluster_id):
-        r = _make_request_with_cluser_id('get', 'upgrade-versions', cluster_id)
+        r = _make_request_with_cluser_id('get', 'list-upgrade-versions')
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get list of upgrade versions: %s'

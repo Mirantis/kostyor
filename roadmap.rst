@@ -26,6 +26,8 @@ Implement start OpenStack cluster upgrade procedure
 
   * Implement execution of steps of an upgrade
 
+* DevStack plugin
+
 Integrate Kostyor with Downtimer tool
 =====================================
 

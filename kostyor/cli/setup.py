@@ -56,6 +56,7 @@ setup(
             'list-upgrade-versions = kostyor_cli.main:ListUpgradeVersions',
             'list-discovery-methods = kostyor_cli.main:ListDiscoveryMethods',
             'upgrade-status = kostyor_cli.main:UpgradeStatus',
+            'upgrade-cluster = kostyor_cli.main:ClusterUpgrade',
         ],
     },
 

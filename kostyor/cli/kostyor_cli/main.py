@@ -102,9 +102,27 @@ class ClusterStatus(ShowOne):
         return result
 
 
-class ClusterUpgrade(Command):
+class ClusterUpgrade(ShowOne):
     description = "Kicks off an upgrade of specified cluster"
     action = "upgrade-cluster"
+
+    def get_parser(self, prog_name):
+        parser = super(ClusterUpgrade, self).get_parser(prog_name)
+        for arg_name in ['cluster_id', 'to_version']:
+            parser.add_argument(arg_name)
+        return parser
+
+    def take_action(self, parsed_args):
+        cluster_id = parsed_args.cluster_id
+        to_version = parsed_args.to_version
+        columns = ('Cluster ID', 'Upgrade Status',)
+        request_str = 'http://{}:{}/upgrade-cluster/{}'.format(host,
+                                                               port,
+                                                               cluster_id)
+        data = requests.post(request_str,
+                             params={'version': to_version}).json()
+        output = (data['id'], data['status'],)
+        return (columns, output)
 
     def upgrade(cluster_id, to_version):
         r = _make_request_with_cluser_id('post', 'upgrade-cluster', cluster_id)

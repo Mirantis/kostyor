@@ -86,10 +86,10 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         client = n_client.Client(self.OS_COMPUTE_API_VERSION,
                                  session=self.session)
         return list(map(lambda service: (service.host, service.binary),
-                   client.services.list()))
+                        client.services.list()))
 
     def discover_neutron(self):
         """ Use the Neutron REST API to discover agents and their location """
         client = mutnauq_client.Client(session=self.session)
         return list(map(lambda agent: (agent['host'], agent['binary']),
-                   client.list_agents()['agents']))
+                        client.list_agents()['agents']))

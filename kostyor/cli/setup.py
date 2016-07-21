@@ -1,10 +1,10 @@
 #!/usr/bin/env python
+from setuptools import setup, find_packages
 
 PROJECT = 'kostyor'
 
 VERSION = '0.1'
 
-from setuptools import setup, find_packages
 
 try:
     long_description = open('README.rst', 'rt').read()

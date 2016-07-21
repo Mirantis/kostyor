@@ -1,9 +1,12 @@
 language: python
 install:
-  - pip install tox 
+- pip install tox
 script:
-  - tox
+- tox
 env:
-  - TOXENV=py27
-  - TOXENV=py34
-  - TOXENV=docs
+- TOXENV=py27
+- TOXENV=py34
+- TOXENV=docs
+notifications:
+  slack:
+    secure: PkKdegyG4k8+q46F320r9pY7g8AzL5UXzUqB98CzmB6dbgT3glTJPhrwPRPxg+UMelHABZLuLByDDAkZx2wIeDumqxd8b7HxcYWVjr8Fa39+DOIx9OZ1KbjBNJQoL7i4tSpR+y50OCMsWYcW0FRyfWHZd+inHFWzT+bovVLdUSd6N5y8TSF+AbhFL6XPdd5wDmiBsn5De6Xc5AWvaxLZpAJ34QYaejbTM94XlL1Nqt+J0Htp3zlZlBMjcoFsWls8qUQLjNKWljuaPiRHNlbAtqGvgcuFfJ8IHQP0uZCOeQTT3yCKyBnM60no8BPbcsKaNP3lYrTl9wusdcQpa+FAYNwW0dWSNdtckF8s06qibw6qmQrl712aeGplMicu1z899RXSQnhhRwWEsESwfOh8LWvCrr9UW/hxvQauRPd8iC285EO2yQomSZops1n54Iv2/ERFyRPrrt8qSIY9HdYvvQLbVQVhYLTHo6U9qqAlTXLb+8HJYbjhwa8QfeI64ccYbUfMtuLViCmz+G1M0FddGBwCxd93FHuO1LDUKrddbIQKGqJmTEdMXPoWKyxxo9oGqBuPJZxc+3PnQ+/D4rr8+I99Y8Tby8mcQyt/CabiFU70Cbqv68K3B8lfABufuZ65iL6mqxJRFJGG8uEU3SNtkPY+9IwMbNGp3wfZfyPOjjM=

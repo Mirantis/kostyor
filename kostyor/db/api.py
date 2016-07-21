@@ -9,8 +9,9 @@
 def get_cluster_status(cluster_id):
     #TODO fix it later
     return {'id': cluster_id,
-            'name': 'tmp',
-            'status': 'ready'}
+            'name': "Sean's Lab",
+            'version': "Mitaka",
+            'status': "READY",}
 
 def get_upgrade_status(cluster_id):
     return {'id': cluster_id, 'status': 'upgrading'}
@@ -46,3 +47,8 @@ def pause_cluster_upgrade(cluster_id):
 
 def rollback_cluster_upgrade(cluster_id):
     return {'id': cluster_id, 'status': 'rolling back'}
+
+def get_clusters():
+    return {'clusters': [{'id': 'TEST',
+                         'name': 'Fake Cluster',
+                         'status': 'READY'}] }

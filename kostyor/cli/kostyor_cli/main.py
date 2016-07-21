@@ -65,11 +65,11 @@ class ClusterList(Lister):
     def take_action(self, parsed_args):
         columns = ('Cluster Name', 'Cluster ID', 'Status')
 
-        data = (("Jay's Lab", "3e99896e-3199-11e6-ac61-9e71128cae77", "READY"),
-                ("Sean's Lab", "3e998d4c-3199-11e6-ac61-9e71128cae77",
-                 "READY"))
+        data = requests.get('http://{}:{}/cluster-list'.format(host, port))
+        clusters = data.json()['clusters']
+        output = ((i['name'], i['id'], i['status']) for i in clusters)
 
-        return (columns, data)
+        return (columns, output)
 
 
 class ClusterStatus(ShowOne):
@@ -86,14 +86,12 @@ class ClusterStatus(ShowOne):
     def take_action(self, parsed_args):
 
         cluster_id = parsed_args.cluster_id
-
         columns = ('Cluster ID', 'Cluster Name', 'OpenStack Version', 'Status',)
-
-        data = ("3e998d4c-3199-11e6-ac61-9e71128cae77", "Sean's Lab", "Mitaka",
-                "READY",)
-
-        return (columns, data)
-
+        data = requests.get(
+            'http://{}:{}/cluster-status/{}'.format(host, port, cluster_id))
+        data = data.json()
+        output = (data['id'], data['name'], data['version'], data['status'])
+        return (columns, output)
 
     def get_status(cluster_id):
         r = _make_request_with_cluser_id('get', 'cluster-status', cluster_id)
@@ -104,9 +102,27 @@ class ClusterStatus(ShowOne):
         return result
 
 
-class ClusterUpgrade(Command):
+class ClusterUpgrade(ShowOne):
     description = "Kicks off an upgrade of specified cluster"
     action = "upgrade-cluster"
+
+    def get_parser(self, prog_name):
+        parser = super(ClusterUpgrade, self).get_parser(prog_name)
+        for arg_name in ['cluster_id', 'to_version']:
+            parser.add_argument(arg_name)
+        return parser
+
+    def take_action(self, parsed_args):
+        cluster_id = parsed_args.cluster_id
+        to_version = parsed_args.to_version
+        columns = ('Cluster ID', 'Upgrade Status',)
+        request_str = 'http://{}:{}/upgrade-cluster/{}'.format(host,
+                                                               port,
+                                                               cluster_id)
+        data = requests.post(request_str,
+                             params={'version': to_version}).json()
+        output = (data['id'], data['status'],)
+        return (columns, output)
 
     def upgrade(cluster_id, to_version):
         r = _make_request_with_cluser_id('post', 'upgrade-cluster', cluster_id)

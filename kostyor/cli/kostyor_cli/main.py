@@ -251,6 +251,27 @@ class ListUpgradeVersions(Lister):
         return result
 
 
+class CheckUpgrade(Lister):
+    description = ("Returns list of available versions cluster can be "
+                   "upgraded to")
+    action = "check-upgrade"
+
+    def get_parser(self, prog_name):
+        parser = super(CheckUpgrade, self).get_parser(prog_name)
+        parser.add_argument('cluster_id')
+        return parser
+
+    def take_action(self, parsed_args):
+        cluster_id = parsed_args.cluster_id
+        columns = ('Available Upgrade Versions',)
+        request_str = 'http://{}:{}/upgrade-versions/{}'.format(host,
+                                                                port,
+                                                                cluster_id)
+        data = requests.get(request_str).json()
+        output = ((i.capitalize(),) for i in data)
+        return (columns, output)
+
+
 class ListDiscoveryMethods(Lister):
     description = ("Returns a list of available methods to discover the "
                    "hosts and services that comprise an OpenStack cluster")

@@ -51,6 +51,7 @@ setup(
             'kostyor = kostyor_cli.main:main'
         ],
         'kostyor.cli': [
+            'check-upgrade = kostyor_cli.main:CheckUpgrade',
             'cluster-status = kostyor_cli.main:ClusterStatus',
             'cluster-list = kostyor_cli.main:ClusterList',
             'list-upgrade-versions = kostyor_cli.main:ListUpgradeVersions',

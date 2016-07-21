@@ -53,16 +53,15 @@ def get_discovery_methods():
 
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
-    versions = db_api.get_upgrade_versions(cluster_id)
-    if not versions:
-        resp = generate_response(
-            404,
-            'Get upgrade version failed for cluster %s' % cluster_id
-        )
+    cluster = db_api.get_cluster_status(cluster_id)
+    if not cluster:
+        resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
-
-    resp = jsonify(versions)
-    return resp
+    cluster_version_index = constants.OPENSTACK_VERSIONS.index(
+        cluster['version'].lower())
+    upgrade_versions = (
+        constants.OPENSTACK_VERSIONS[cluster_version_index + 1:])
+    return jsonify(upgrade_versions)
 
 
 @app.route('/list-upgrade-versions')

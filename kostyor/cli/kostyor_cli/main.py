@@ -86,7 +86,8 @@ class ClusterStatus(ShowOne):
     def take_action(self, parsed_args):
 
         cluster_id = parsed_args.cluster_id
-        columns = ('Cluster ID', 'Cluster Name', 'OpenStack Version', 'Status',)
+        columns = ('Cluster ID', 'Cluster Name', 'OpenStack Version',
+                   'Status',)
         data = requests.get(
             'http://{}:{}/cluster-status/{}'.format(host, port, cluster_id))
         data = data.json()
@@ -144,15 +145,11 @@ class UpgradeStatus(Lister):
     def take_action(self, parsed_args):
         upgrade_id = parsed_args.upgrade_id
 
+        res = _make_request_with_cluser_id('get', self.action, upgrade_id)
+
         columns = ('Service', 'Version', 'Count')
 
-        data = (('nova-cpu', 'liberty', 20),
-                ('nova-cpu', 'mitaka', 3),
-                ('neutron-ovs-agent', 'liberty', 20),
-                ('neutron-ovs-agent', 'mitaka', 3),
-                )
-
-        return (columns, data)
+        return (columns, res)
 
     def get_status(upgrade_id):
         r = _make_request_with_cluser_id('get', 'upgrade-status', upgrade_id)

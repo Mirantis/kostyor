@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import logging
 import requests
 import sys
 import ConfigParser
@@ -8,6 +9,9 @@ from cliff.lister import Lister
 from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.show import ShowOne
+
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 CONF = ConfigParser.ConfigParser()
 CONF.read("conf.ini")

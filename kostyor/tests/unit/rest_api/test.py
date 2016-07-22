@@ -86,9 +86,14 @@ class KostyorRestAPITest(unittest.TestCase):
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    def test_create_cluster_upgrade_404(self, fake_db_create_cluster_upgrade):
+    @mock.patch('kostyor.db.api.get_cluster_status')
+    def test_create_cluster_upgrade_404(self,
+                                        fake_get_cluster_status,
+                                        fake_db_create_cluster_upgrade):
         fake_db_create_cluster_upgrade.return_value = None
-        res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id))
+        fake_get_cluster_status.return_value = {'version': 'liberty'}
+        res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
+                            data={'version': 'mitaka'})
         self.assertEqual(404, res.status_code)
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
@@ -96,7 +101,8 @@ class KostyorRestAPITest(unittest.TestCase):
         expected = {'id': self.cluster_id, 'status': 'upgrading'}
 
         fake_db_create_cluster_upgrade.return_value = expected
-        res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id))
+        res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
+                            data={'version': 'newton'})
         data = res.data.decode('utf-8')
         received = json.loads(data)
         self.assertEqual(201, res.status_code)

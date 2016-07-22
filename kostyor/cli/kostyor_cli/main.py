@@ -28,6 +28,11 @@ def _make_request_with_cluser_id(http_method, endpoint, cluster_id):
                                                   cluster_id))
 
 
+def _print_error_msg(resp):
+    message = resp.json()['message']
+    print('HTTP {}: {}'.format(resp.status_code, message))
+
+
 class KostyorApp(App):
     def __init__(self):
         super(KostyorApp, self).__init__(
@@ -90,8 +95,13 @@ class ClusterStatus(ShowOne):
                    'Status',)
         data = requests.get(
             'http://{}:{}/cluster-status/{}'.format(host, port, cluster_id))
-        data = data.json()
-        output = (data['id'], data['name'], data['version'], data['status'])
+        output = ()
+        if data.status_code == 200:
+            data = data.json()
+            output = (data[i].capitalize() for i in ['id', 'name', 'version',
+                                                     'status'])
+        else:
+            _print_error_msg(data)
         return (columns, output)
 
     def get_status(cluster_id):
@@ -121,8 +131,14 @@ class ClusterUpgrade(ShowOne):
                                                                port,
                                                                cluster_id)
         data = requests.post(request_str,
-                             params={'version': to_version}).json()
-        output = (data['id'], data['status'],)
+                             data={'version': to_version})
+        output = ()
+        if data.status_code == 201:
+            data = data.json()
+            output = (data['id'], data['status'],)
+        else:
+            _print_error_msg(data)
+
         return (columns, output)
 
     def upgrade(cluster_id, to_version):
@@ -267,8 +283,12 @@ class CheckUpgrade(Lister):
         request_str = 'http://{}:{}/upgrade-versions/{}'.format(host,
                                                                 port,
                                                                 cluster_id)
-        data = requests.get(request_str).json()
-        output = ((i.capitalize(),) for i in data)
+        data = requests.get(request_str)
+        output = ()
+        if data.status_code == 200:
+            output = ((i.capitalize(),) for i in data.json())
+        else:
+            _print_error_msg(data)
         return (columns, output)
 
 

@@ -12,7 +12,7 @@ def get_cluster_status(cluster_id):
     # TODO fix it later
     return {'id': cluster_id,
             'name': "Sean's Lab",
-            'version': "Mitaka",
+            'version': "mitaka",
             'status': "READY"}
 
 

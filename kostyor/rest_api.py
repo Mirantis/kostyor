@@ -58,7 +58,7 @@ def get_upgrade_versions(cluster_id):
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
     cluster_version_index = constants.OPENSTACK_VERSIONS.index(
-        cluster['version'].lower())
+        cluster['version'])
     upgrade_versions = (
         constants.OPENSTACK_VERSIONS[cluster_version_index + 1:])
     return jsonify(upgrade_versions)
@@ -87,7 +87,23 @@ def create_discovery_method():
 
 @app.route('/upgrade-cluster/<cluster_id>', methods=['POST'])
 def create_cluster_upgrade(cluster_id):
-    to_version = request.args.get('version')
+    to_version = request.form.get('version').lower()
+    if (to_version not in constants.OPENSTACK_VERSIONS):
+        resp = generate_response(
+            400,
+            'Unsupported version: %s' % to_version
+        )
+        return resp
+
+    cluster = db_api.get_cluster_status(cluster_id)
+    if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
+            constants.OPENSTACK_VERSIONS.index(to_version)):
+        resp = generate_response(
+            400,
+            'Cluster version is the same or newer than %s' % to_version
+        )
+        return resp
+
     upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
     if not upgrade:
         resp = generate_response(

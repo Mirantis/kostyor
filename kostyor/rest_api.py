@@ -1,9 +1,16 @@
+from collections import defaultdict
+
 from flask import Flask
 from flask import jsonify
 from flask import request
+from keystoneauth1 import exceptions
+from keystoneauth1 import session
+from keystoneauth1.identity import v2
+import six
 
 from kostyor.common import constants
 from kostyor.db import api as db_api
+from kostyor.inventory import discover
 from kostyor.inventory import upgrades
 
 app = Flask(__name__)
@@ -69,7 +76,7 @@ def list_upgrade_versions():
     return jsonify(constants.OPENSTACK_VERSIONS)
 
 
-@app.route('/discover-cluster', methods=['POST'])
+@app.route('/create-discovery-method', methods=['POST'])
 def create_discovery_method():
     discovery_method = request.args.get('method')
     disc_method = db_api.create_discovery_method(discovery_method)
@@ -81,6 +88,52 @@ def create_discovery_method():
         return resp
 
     resp = jsonify(disc_method)
+    resp.status_code = 201
+    return resp
+
+
+@app.route('/discover-cluster', methods=['POST'])
+def discover_cluster():
+    discovery_method = str(request.args.get('method')).lower()
+
+    # At this point only OpenStack-based discovery is implemented.
+    if discovery_method == constants.OPENSTACK:
+        sess = session.Session(auth=v2.Password(
+            username=request.args.get('username'),
+            password=request.args.get('password'),
+            tenant_name=request.args.get('tenant_name'),
+            auth_url=request.args.get('auth_url')))
+        cluster_discovery = discover.OpenStackServiceDiscovery(sess)
+        try:
+            services = cluster_discovery.discover()
+        except exceptions.ClientException as e:
+            resp = generate_response(
+                e.http_status,
+                e.message
+            )
+            return resp
+
+        new_cluster = db_api.create_cluster(request.args.get('cluster_name'),
+                                            constants.UNDEFINED,
+                                            constants.NOT_READY_FOR_UPGRADE)
+        host_service_map = defaultdict(list)
+        for s in services:
+            host_service_map[s[0]].append(s[1])
+        hosts_ids = {}
+        for host in host_service_map:
+            hosts_ids[host] = db_api.create_host(host, new_cluster['id'])['id']
+        for host, service in six.iteritems(host_service_map):
+            for s in service:
+                db_api.create_service(s, hosts_ids[host],
+                                      constants.NOT_READY_FOR_UPGRADE)
+    else:
+        resp = generate_response(
+            404,
+            'Unsupported discovery method: %s' % discovery_method
+        )
+        return resp
+
+    resp = jsonify(new_cluster)
     resp.status_code = 201
     return resp
 

@@ -58,11 +58,41 @@ class KostyorApp(App):
             self.LOG.debug('got an error: %s', err)
 
 
-class ClusterDiscovery(Command):
+class ClusterDiscovery(ShowOne):
     description = ("Discover cluster using specified discovery "
                    "method <discovery_method> and setting it's "
                    "name to <cluster_name>")
     action = "discover-cluster"
+
+    def get_parser(self, prog_name):
+        parser = super(ClusterDiscovery, self).get_parser(prog_name)
+        for arg in ['discovery_method', 'cluster_name', '--os-auth-url',
+                    '--username', '--tenant-name', '--password']:
+            parser.add_argument(arg)
+        return parser
+
+    def take_action(self, parsed_args):
+        columns = ("Cluster ID", "Name", "Version", "Status")
+        request_params = {
+            'method': parsed_args.discovery_method,
+            'cluster_name': parsed_args.cluster_name,
+            'auth_url': parsed_args.os_auth_url,
+            'username': parsed_args.username,
+            'tenant_name': parsed_args.tenant_name,
+            'password': parsed_args.password,
+        }
+
+        request_str = 'http://{}:{}/discover-cluster'.format(host, port)
+        data = requests.post(request_str,
+                             params=request_params)
+        output = ()
+        if data.status_code == 201:
+            data = data.json()
+            output = (data[i].capitalize() for i in ['id', 'name', 'version',
+                                                     'status'])
+        else:
+            _print_error_msg(data)
+        return (columns, output)
 
     def discover(discovery_method, cluster_name, *args):
         # TODO validate discovery method

@@ -71,7 +71,7 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.db.api.create_discovery_method')
     def test_create_disc_method_404(self, fake_db_create_disc_method):
         fake_db_create_disc_method.return_value = None
-        res = self.app.post('/discover-cluster')
+        res = self.app.post('/create-discovery-method')
         self.assertEqual(404, res.status_code)
 
     @mock.patch('kostyor.db.api.create_discovery_method')
@@ -79,7 +79,7 @@ class KostyorRestAPITest(unittest.TestCase):
         expected = {'id': '1', 'method': 'method'}
 
         fake_db_create_disc_method.return_value = expected
-        res = self.app.post('/discover-cluster')
+        res = self.app.post('/create-discovery-method')
         data = res.data.decode('utf-8')
         received = json.loads(data)
         self.assertEqual(201, res.status_code)

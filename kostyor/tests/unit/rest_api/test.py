@@ -42,8 +42,7 @@ class KostyorRestAPITest(unittest.TestCase):
         res = self.app.get('/upgrade-status/{}'.format(self.cluster_id))
         self.assertEqual(404, res.status_code)
 
-    @unittest.skip("@dstepanenko needs to fix - GH #16")
-    @mock.patch('kostyor.rest_api.get_discovery_methods')
+    @mock.patch('kostyor.db.api.get_discovery_methods')
     def test_get_discovery_methods_default_only(self,
                     fake_conf_get_discovery_methods):
         methods = ['method1', 'method2']

@@ -42,7 +42,7 @@ def get_upgrade_status(cluster_id):
 
 @app.route('/discovery-methods')
 def get_discovery_methods():
-    methods = db_api.get_disc_methods()
+    methods = db_api.get_discovery_methods()
     items = [{'method': method} for method in methods]
     disc_methods = {'items': items}
 

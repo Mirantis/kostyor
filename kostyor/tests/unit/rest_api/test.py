@@ -17,7 +17,8 @@ class KostyorRestAPITest(unittest.TestCase):
         fake_db_get_cluster_status.return_value = expected
         res = self.app.get('/cluster-status/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)
-        received = json.loads(res.data)
+        data = res.data.decode('utf-8')
+        received = json.loads(data)
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.get_cluster_status')
@@ -33,7 +34,8 @@ class KostyorRestAPITest(unittest.TestCase):
         fake_db_get_upgrade_status.return_value = expected
         res = self.app.get('/upgrade-status/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)
-        received = json.loads(res.data)
+        data = res.data.decode('utf-8')
+        received = json.loads(data)
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.get_upgrade_status')
@@ -48,7 +50,8 @@ class KostyorRestAPITest(unittest.TestCase):
         methods = ['method1', 'method2']
         fake_conf_get_discovery_methods.return_value = methods
         res = self.app.get('/discovery-methods')
-        data = json.loads(res.data)
+        str_data = res.data.decode('utf-8')
+        data = json.loads(str_data)
         received = data['items']
         expected = [{'method': method} for method in methods]
         self.assertEqual(200, res.status_code)
@@ -64,7 +67,8 @@ class KostyorRestAPITest(unittest.TestCase):
 
         fake_db_get_upgrade_versions.return_value = expected
         res = self.app.get('/upgrade-versions/{}'.format(self.cluster_id))
-        received = json.loads(res.data)
+        data = res.data.decode('utf-8')
+        received = json.loads(data)
         self.assertEqual(200, res.status_code)
         self.assertEqual(expected, received)
 
@@ -80,7 +84,8 @@ class KostyorRestAPITest(unittest.TestCase):
 
         fake_db_create_disc_method.return_value = expected
         res = self.app.post('/discover-cluster')
-        received = json.loads(res.data)
+        data = res.data.decode('utf-8')
+        received = json.loads(data)
         self.assertEqual(201, res.status_code)
         self.assertEqual(expected, received)
 
@@ -96,7 +101,8 @@ class KostyorRestAPITest(unittest.TestCase):
 
         fake_db_create_cluster_upgrade.return_value = expected
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id))
-        received = json.loads(res.data)
+        data = res.data.decode('utf-8')
+        received = json.loads(data)
         self.assertEqual(201, res.status_code)
         self.assertEqual(expected, received)
 

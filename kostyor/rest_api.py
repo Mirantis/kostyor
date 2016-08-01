@@ -2,8 +2,9 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
-from db import api as db_api
-from inventory import upgrades
+from kostyor.db import api as db_api
+from kostyor.inventory import upgrades
+
 app = Flask(__name__)
 
 
@@ -41,7 +42,9 @@ def get_upgrade_status(cluster_id):
 
 @app.route('/discovery-methods')
 def get_discovery_methods():
-    disc_methods = db_api.get_discovery_methods()
+    methods = db_api.get_discovery_methods()
+    items = [{'method': method} for method in methods]
+    disc_methods = {'items': items}
 
     resp = jsonify(disc_methods)
     return resp

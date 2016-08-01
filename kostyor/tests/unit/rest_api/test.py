@@ -2,8 +2,9 @@ import json
 import mock
 import sys
 import unittest
-sys.modules['kostyor.conf'] = mock.Mock()
 from kostyor.rest_api import app
+sys.modules['kostyor.conf'] = mock.Mock()
+
 
 class KostyorRestAPITest(unittest.TestCase):
 
@@ -45,8 +46,9 @@ class KostyorRestAPITest(unittest.TestCase):
         self.assertEqual(404, res.status_code)
 
     @mock.patch('kostyor.db.api.get_discovery_methods')
-    def test_get_discovery_methods_default_only(self,
-                    fake_conf_get_discovery_methods):
+    def test_get_discovery_methods_default_only(
+            self,
+            fake_conf_get_discovery_methods):
         methods = ['method1', 'method2']
         fake_conf_get_discovery_methods.return_value = methods
         res = self.app.get('/discovery-methods')
@@ -63,7 +65,7 @@ class KostyorRestAPITest(unittest.TestCase):
                     {'version': 'version1'},
                     {'version': 'version2'}
                     ]
-        }
+                    }
 
         fake_db_get_upgrade_versions.return_value = expected
         res = self.app.get('/upgrade-versions/{}'.format(self.cluster_id))
@@ -109,7 +111,8 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.cancel_upgrade')
     @mock.patch('kostyor.db.api.cancel_cluster_upgrade')
     def test_cancel_cluster_upgrade_404(self,
-            fake_db_cancel_cluster_upgrade, fake_inventory_cancel_upgrade):
+                                        fake_db_cancel_cluster_upgrade,
+                                        fake_inventory_cancel_upgrade):
         fake_db_cancel_cluster_upgrade.return_value = None
         fake_inventory_cancel_upgrade.return_value = 0
         res = self.app.put('/upgrade-cancel/{}'.format(self.cluster_id))
@@ -117,8 +120,10 @@ class KostyorRestAPITest(unittest.TestCase):
 
     @mock.patch('kostyor.inventory.upgrades.cancel_upgrade')
     @mock.patch('kostyor.db.api.cancel_cluster_upgrade')
-    def test_cancel_cluster_upgrade_on_inventory_failure(self,
-            fake_db_cancel_cluster_upgrade, fake_inventory_cancel_upgrade):
+    def test_cancel_cluster_upgrade_on_inventory_failure(
+            self,
+            fake_db_cancel_cluster_upgrade,
+            fake_inventory_cancel_upgrade):
         fake_db_cancel_cluster_upgrade.return_value = {'id': self.cluster_id,
                                                        'status': 'canceling'}
         fake_inventory_cancel_upgrade.return_value = 1
@@ -128,7 +133,8 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.cancel_upgrade')
     @mock.patch('kostyor.db.api.cancel_cluster_upgrade')
     def test_cancel_cluster_upgrade(self,
-            fake_db_cancel_cluster_upgrade, fake_inventory_cancel_upgrade):
+                                    fake_db_cancel_cluster_upgrade,
+                                    fake_inventory_cancel_upgrade):
         fake_db_cancel_cluster_upgrade.return_value = {'id': self.cluster_id,
                                                        'status': 'canceling'}
         fake_inventory_cancel_upgrade.return_value = 0
@@ -138,7 +144,8 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.continue_upgrade')
     @mock.patch('kostyor.db.api.continue_cluster_upgrade')
     def test_continue_cluster_upgrade_404(self,
-            fake_db_continue_cluster_upgrade, fake_inventory_continue_upgrade):
+                                          fake_db_continue_cluster_upgrade,
+                                          fake_inventory_continue_upgrade):
         fake_db_continue_cluster_upgrade.return_value = None
         fake_inventory_continue_upgrade.return_value = 0
         res = self.app.put('/upgrade-continue/{}'.format(self.cluster_id))
@@ -146,10 +153,12 @@ class KostyorRestAPITest(unittest.TestCase):
 
     @mock.patch('kostyor.inventory.upgrades.continue_upgrade')
     @mock.patch('kostyor.db.api.continue_cluster_upgrade')
-    def test_continue_cluster_upgrade_on_inventory_failure(self,
-            fake_db_continue_cluster_upgrade, fake_inventory_continue_upgrade):
+    def test_continue_cluster_upgrade_on_inventory_failure(
+            self,
+            fake_db_continue_cluster_upgrade,
+            fake_inventory_continue_upgrade):
         fake_db_continue_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'canceling'}
+                                                         'status': 'canceling'}
         fake_inventory_continue_upgrade.return_value = 1
         res = self.app.put('/upgrade-continue/{}'.format(self.cluster_id))
         self.assertEqual(500, res.status_code)
@@ -157,9 +166,10 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.continue_upgrade')
     @mock.patch('kostyor.db.api.continue_cluster_upgrade')
     def test_continue_cluster_upgrade(self,
-            fake_db_continue_cluster_upgrade, fake_inventory_continue_upgrade):
+                                      fake_db_continue_cluster_upgrade,
+                                      fake_inventory_continue_upgrade):
         fake_db_continue_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'canceling'}
+                                                         'status': 'canceling'}
         fake_inventory_continue_upgrade.return_value = 0
         res = self.app.put('/upgrade-continue/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)
@@ -167,7 +177,8 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.pause_upgrade')
     @mock.patch('kostyor.db.api.pause_cluster_upgrade')
     def test_pause_cluster_upgrade_404(self,
-            fake_db_pause_cluster_upgrade, fake_inventory_pause_upgrade):
+                                       fake_db_pause_cluster_upgrade,
+                                       fake_inventory_pause_upgrade):
         fake_db_pause_cluster_upgrade.return_value = None
         fake_inventory_pause_upgrade.return_value = 0
         res = self.app.put('/upgrade-pause/{}'.format(self.cluster_id))
@@ -175,10 +186,12 @@ class KostyorRestAPITest(unittest.TestCase):
 
     @mock.patch('kostyor.inventory.upgrades.pause_upgrade')
     @mock.patch('kostyor.db.api.pause_cluster_upgrade')
-    def test_pause_cluster_upgrade_on_inventory_failure(self,
-            fake_db_pause_cluster_upgrade, fake_inventory_pause_upgrade):
+    def test_pause_cluster_upgrade_on_inventory_failure(
+            self,
+            fake_db_pause_cluster_upgrade,
+            fake_inventory_pause_upgrade):
         fake_db_pause_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'canceling'}
+                                                      'status': 'canceling'}
         fake_inventory_pause_upgrade.return_value = 1
         res = self.app.put('/upgrade-pause/{}'.format(self.cluster_id))
         self.assertEqual(500, res.status_code)
@@ -186,9 +199,10 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.pause_upgrade')
     @mock.patch('kostyor.db.api.pause_cluster_upgrade')
     def test_pause_cluster_upgrade(self,
-            fake_db_pause_cluster_upgrade, fake_inventory_pause_upgrade):
+                                   fake_db_pause_cluster_upgrade,
+                                   fake_inventory_pause_upgrade):
         fake_db_pause_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'paused'}
+                                                      'status': 'paused'}
         fake_inventory_pause_upgrade.return_value = 0
         res = self.app.put('/upgrade-pause/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)
@@ -196,7 +210,8 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.rollback_upgrade')
     @mock.patch('kostyor.db.api.rollback_cluster_upgrade')
     def test_rollback_cluster_upgrade_404(self,
-            fake_db_rollback_cluster_upgrade, fake_inventory_rollback_upgrade):
+                                          fake_db_rollback_cluster_upgrade,
+                                          fake_inventory_rollback_upgrade):
         fake_db_rollback_cluster_upgrade.return_value = None
         fake_inventory_rollback_upgrade.return_value = 0
         res = self.app.put('/upgrade-rollback/{}'.format(self.cluster_id))
@@ -204,10 +219,12 @@ class KostyorRestAPITest(unittest.TestCase):
 
     @mock.patch('kostyor.inventory.upgrades.rollback_upgrade')
     @mock.patch('kostyor.db.api.rollback_cluster_upgrade')
-    def test_rollback_cluster_upgrade_on_inventory_failure(self,
-            fake_db_rollback_cluster_upgrade, fake_inventory_rollback_upgrade):
+    def test_rollback_cluster_upgrade_on_inventory_failure(
+            self,
+            fake_db_rollback_cluster_upgrade,
+            fake_inventory_rollback_upgrade):
         fake_db_rollback_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'canceling'}
+                                                         'status': 'canceling'}
         fake_inventory_rollback_upgrade.return_value = 1
         res = self.app.put('/upgrade-rollback/{}'.format(self.cluster_id))
         self.assertEqual(500, res.status_code)
@@ -215,9 +232,10 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.inventory.upgrades.rollback_upgrade')
     @mock.patch('kostyor.db.api.rollback_cluster_upgrade')
     def test_rollback_cluster_upgrade(self,
-            fake_db_rollback_cluster_upgrade, fake_inventory_rollback_upgrade):
+                                      fake_db_rollback_cluster_upgrade,
+                                      fake_inventory_rollback_upgrade):
         fake_db_rollback_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'canceling'}
+                                                         'status': 'canceling'}
         fake_inventory_rollback_upgrade.return_value = 0
         res = self.app.put('/upgrade-rollback/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)

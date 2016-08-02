@@ -84,7 +84,7 @@ class ClusterDiscovery(ShowOne):
 
         request_str = 'http://{}:{}/discover-cluster'.format(host, port)
         data = requests.post(request_str,
-                             params=request_params)
+                             data=request_params)
         output = ()
         if data.status_code == 201:
             data = data.json()
@@ -274,7 +274,7 @@ class DiscoveryMethod(Command):
             'http://{host}:{port}/discover-cluster'.format(
                 host=host, port=port
             ),
-            params={'method': method}
+            data={'method': method}
         )
         if r.status_code != 201:
             message = r.json()['message']

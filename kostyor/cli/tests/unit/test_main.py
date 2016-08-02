@@ -70,7 +70,7 @@ class ClusterDiscoveryTestCase(CLIBaseTestCase):
         self.app.run(self.command)
         requests.post.assert_called_once_with(
             self.expected_request_str,
-            params=self.expected_request_params)
+            data=self.expected_request_params)
         self.assertEqual(False, main._print_error_msg.called)
 
     def test_discover_cluster_response_with_error(self):
@@ -79,7 +79,7 @@ class ClusterDiscoveryTestCase(CLIBaseTestCase):
         self.app.run(self.command)
         requests.post.assert_called_once_with(
             self.expected_request_str,
-            params=self.expected_request_params)
+            data=self.expected_request_params)
         main._print_error_msg.assert_called_once_with(self.resp)
 
 
@@ -125,13 +125,13 @@ class ClusterUpgradeTestCase(CLIBaseTestCase):
         self.resp.status_code = 201
         self.app.run(self.command)
         requests.post.assert_called_once_with(self.expected_request_str,
-                                              params=self.expected_params)
+                                              data=self.expected_params)
         self.assertEqual(False, main._print_error_msg.called)
 
     def test_upgrade_cluster_response_with_error(self):
         self.app.run(self.command)
         requests.post.assert_called_once_with(self.expected_request_str,
-                                              params=self.expected_params)
+                                              data=self.expected_params)
         main._print_error_msg.assert_called_once_with(self.resp)
 
 

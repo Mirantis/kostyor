@@ -78,7 +78,7 @@ def list_upgrade_versions():
 
 @app.route('/create-discovery-method', methods=['POST'])
 def create_discovery_method():
-    discovery_method = request.args.get('method')
+    discovery_method = request.form.get('method')
     disc_method = db_api.create_discovery_method(discovery_method)
     if not disc_method:
         resp = generate_response(
@@ -94,7 +94,7 @@ def create_discovery_method():
 
 @app.route('/discover-cluster', methods=['POST'])
 def discover_cluster():
-    discovery_method = str(request.args.get('method')).lower()
+    discovery_method = str(request.form.get('method')).lower()
 
     # At this point only OpenStack-based discovery is implemented.
     if discovery_method == constants.OPENSTACK:

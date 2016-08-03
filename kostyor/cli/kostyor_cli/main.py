@@ -2,7 +2,7 @@
 import logging
 import requests
 import sys
-import ConfigParser
+from six.moves import configparser
 
 from cliff.command import Command
 from cliff.lister import Lister
@@ -13,7 +13,7 @@ from cliff.show import ShowOne
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-CONF = ConfigParser.ConfigParser()
+CONF = configparser.ConfigParser()
 CONF.read("conf.ini")
 try:
     host = CONF.get('global', 'host')

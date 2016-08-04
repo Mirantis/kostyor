@@ -1,4 +1,5 @@
 from kostyor.db.sqlalchemy import models
+from kostyor.db import api as db_api
 
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
@@ -21,3 +22,7 @@ class DbApiTestCase(base.BaseTestCase):
         super(DbApiTestCase, self).setUp()
         self.context = KostyorTestContext()
         models.Base.metadata.create_all(self.context.engine)
+
+    def test_create_cluster(self):
+        result = db_api.create_cluster(self.context, "test", "Mitaka", "READY")
+        self.assertIsInstance(result, models.Cluster)

@@ -64,8 +64,8 @@ def create_service(context, name, host_id, version):
             'version': version}
 
 
-def create_cluster(name, version, status):
-    return {'id': '5678',
-            'name': name,
-            'version': version,
-            'status': status}
+def create_cluster(context, name, version, status):
+    kwargs = {"name": name, "version": version, "status": status}
+    cluster = models.Cluster(**kwargs)
+    context.session.add(cluster)
+    return cluster

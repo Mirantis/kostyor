@@ -25,6 +25,12 @@ class Cluster(Base, HasId):
 
     status = sa.Column(sa.Enum(*constants.STATUSES))
 
+    def __init__(self, name, version, status):
+        super(Cluster, self).__init__()
+        self.name = name
+        self.version = version
+        self.status = status
+
 
 class Host(Base, HasId):
     __tablename__ = 'hosts'

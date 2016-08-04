@@ -64,7 +64,7 @@ class ServiceUpgradeRecord(Base, HasId):
     __tablename__ = 'service_upgrade_records'
 
     service_id = sa.Column(sa.ForeignKey('services.id'))
-    upgrade_task_id = sa.Column(sa.ForeignKey('upgrade_task.id'))
+    upgrade_task_id = sa.Column(sa.ForeignKey('upgrade_tasks.id'))
 
     service = orm.relationship(Service,
                                backref=orm.backref('services',

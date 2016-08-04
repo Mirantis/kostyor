@@ -12,7 +12,7 @@ def get_cluster_status(cluster_id):
     # TODO fix it later
     return {'id': cluster_id,
             'name': "Sean's Lab",
-            'version': "Mitaka",
+            'version': "mitaka",
             'status': "READY"}
 
 
@@ -55,3 +55,23 @@ def rollback_cluster_upgrade(cluster_id):
 def get_clusters():
     return {'clusters': [{'id': 'TEST', 'name': 'Fake Cluster', 'status':
                           'READY'}]}
+
+
+def create_host(name, cluster_id):
+    return {'id': '1234',
+            'name': name,
+            'cluster_id': cluster_id}
+
+
+def create_service(name, host_id, version):
+    return {'id': '4321',
+            'name': name,
+            'host_id': host_id,
+            'version': version}
+
+
+def create_cluster(name, version, status):
+    return {'id': '5678',
+            'name': name,
+            'version': version,
+            'status': status}

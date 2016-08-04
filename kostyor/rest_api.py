@@ -1,8 +1,16 @@
+from collections import defaultdict
+
 from flask import Flask
 from flask import jsonify
 from flask import request
+from keystoneauth1 import exceptions
+from keystoneauth1 import session
+from keystoneauth1.identity import v2
+import six
 
+from kostyor.common import constants
 from kostyor.db import api as db_api
+from kostyor.inventory import discover
 from kostyor.inventory import upgrades
 
 app = Flask(__name__)
@@ -52,21 +60,25 @@ def get_discovery_methods():
 
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
-    versions = db_api.get_upgrade_versions(cluster_id)
-    if not versions:
-        resp = generate_response(
-            404,
-            'Get upgrade version failed for cluster %s' % cluster_id
-        )
+    cluster = db_api.get_cluster_status(cluster_id)
+    if not cluster:
+        resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
+    cluster_version_index = constants.OPENSTACK_VERSIONS.index(
+        cluster['version'])
+    upgrade_versions = (
+        constants.OPENSTACK_VERSIONS[cluster_version_index + 1:])
+    return jsonify(upgrade_versions)
 
-    resp = jsonify(versions)
-    return resp
+
+@app.route('/list-upgrade-versions')
+def list_upgrade_versions():
+    return jsonify(constants.OPENSTACK_VERSIONS)
 
 
-@app.route('/discover-cluster', methods=['POST'])
+@app.route('/create-discovery-method', methods=['POST'])
 def create_discovery_method():
-    discovery_method = request.args.get('method')
+    discovery_method = request.form.get('method')
     disc_method = db_api.create_discovery_method(discovery_method)
     if not disc_method:
         resp = generate_response(
@@ -80,9 +92,71 @@ def create_discovery_method():
     return resp
 
 
+@app.route('/discover-cluster', methods=['POST'])
+def discover_cluster():
+    discovery_method = str(request.form.get('method')).lower()
+
+    # At this point only OpenStack-based discovery is implemented.
+    if discovery_method == constants.OPENSTACK:
+        sess = session.Session(auth=v2.Password(
+            username=request.args.get('username'),
+            password=request.args.get('password'),
+            tenant_name=request.args.get('tenant_name'),
+            auth_url=request.args.get('auth_url')))
+        cluster_discovery = discover.OpenStackServiceDiscovery(sess)
+        try:
+            services = cluster_discovery.discover()
+        except exceptions.ClientException as e:
+            resp = generate_response(
+                e.http_status,
+                e.message
+            )
+            return resp
+
+        new_cluster = db_api.create_cluster(request.args.get('cluster_name'),
+                                            constants.UNDEFINED,
+                                            constants.NOT_READY_FOR_UPGRADE)
+        host_service_map = defaultdict(list)
+        for s in services:
+            host_service_map[s[0]].append(s[1])
+        hosts_ids = {}
+        for host in host_service_map:
+            hosts_ids[host] = db_api.create_host(host, new_cluster['id'])['id']
+        for host, service in six.iteritems(host_service_map):
+            for s in service:
+                db_api.create_service(s, hosts_ids[host],
+                                      constants.NOT_READY_FOR_UPGRADE)
+    else:
+        resp = generate_response(
+            404,
+            'Unsupported discovery method: %s' % discovery_method
+        )
+        return resp
+
+    resp = jsonify(new_cluster)
+    resp.status_code = 201
+    return resp
+
+
 @app.route('/upgrade-cluster/<cluster_id>', methods=['POST'])
 def create_cluster_upgrade(cluster_id):
-    to_version = request.args.get('version')
+    to_version = request.form.get('version').lower()
+    if (to_version not in constants.OPENSTACK_VERSIONS):
+        resp = generate_response(
+            400,
+            'Unsupported version: %s' % to_version
+        )
+        return resp
+
+    cluster = db_api.get_cluster_status(cluster_id)
+    if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
+            constants.OPENSTACK_VERSIONS.index(to_version)):
+        resp = generate_response(
+            400,
+            'Cluster version is the same or newer than %s' % to_version
+        )
+        return resp
+
     upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
     if not upgrade:
         resp = generate_response(

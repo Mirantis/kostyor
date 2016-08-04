@@ -1,7 +1,8 @@
 #!/usr/bin/python
+import logging
 import requests
 import sys
-import ConfigParser
+from six.moves import configparser
 
 from cliff.command import Command
 from cliff.lister import Lister
@@ -9,7 +10,10 @@ from cliff.app import App
 from cliff.commandmanager import CommandManager
 from cliff.show import ShowOne
 
-CONF = ConfigParser.ConfigParser()
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+CONF = configparser.ConfigParser()
 CONF.read("conf.ini")
 try:
     host = CONF.get('global', 'host')
@@ -22,10 +26,15 @@ except:
     port = 80
 
 
-def _make_request_with_cluser_id(http_method, endpoint, cluster_id):
+def _make_request_with_cluster_id(http_method, endpoint, cluster_id):
     req_method = getattr(requests, http_method)
     return req_method('http://{}:{}/{}/{}'.format(host, port, endpoint,
                                                   cluster_id))
+
+
+def _print_error_msg(resp):
+    message = resp.json()['message']
+    print('HTTP {}: {}'.format(resp.status_code, message))
 
 
 class KostyorApp(App):
@@ -49,11 +58,41 @@ class KostyorApp(App):
             self.LOG.debug('got an error: %s', err)
 
 
-class ClusterDiscovery(Command):
+class ClusterDiscovery(ShowOne):
     description = ("Discover cluster using specified discovery "
                    "method <discovery_method> and setting it's "
                    "name to <cluster_name>")
     action = "discover-cluster"
+
+    def get_parser(self, prog_name):
+        parser = super(ClusterDiscovery, self).get_parser(prog_name)
+        for arg in ['discovery_method', 'cluster_name', '--os-auth-url',
+                    '--username', '--tenant-name', '--password']:
+            parser.add_argument(arg)
+        return parser
+
+    def take_action(self, parsed_args):
+        columns = ("Cluster ID", "Name", "Version", "Status")
+        request_params = {
+            'method': parsed_args.discovery_method,
+            'cluster_name': parsed_args.cluster_name,
+            'auth_url': parsed_args.os_auth_url,
+            'username': parsed_args.username,
+            'tenant_name': parsed_args.tenant_name,
+            'password': parsed_args.password,
+        }
+
+        request_str = 'http://{}:{}/discover-cluster'.format(host, port)
+        data = requests.post(request_str,
+                             data=request_params)
+        output = ()
+        if data.status_code == 201:
+            data = data.json()
+            output = (data[i].capitalize() for i in ['id', 'name', 'version',
+                                                     'status'])
+        else:
+            _print_error_msg(data)
+        return (columns, output)
 
     def discover(discovery_method, cluster_name, *args):
         # TODO validate discovery method
@@ -90,12 +129,17 @@ class ClusterStatus(ShowOne):
                    'Status',)
         data = requests.get(
             'http://{}:{}/cluster-status/{}'.format(host, port, cluster_id))
-        data = data.json()
-        output = (data['id'], data['name'], data['version'], data['status'])
+        output = ()
+        if data.status_code == 200:
+            data = data.json()
+            output = (data[i].capitalize() for i in ['id', 'name', 'version',
+                                                     'status'])
+        else:
+            _print_error_msg(data)
         return (columns, output)
 
     def get_status(cluster_id):
-        r = _make_request_with_cluser_id('get', 'cluster-status', cluster_id)
+        r = _make_request_with_cluster_id('get', 'cluster-status', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get cluster status: %s' % message)
@@ -121,12 +165,19 @@ class ClusterUpgrade(ShowOne):
                                                                port,
                                                                cluster_id)
         data = requests.post(request_str,
-                             params={'version': to_version}).json()
-        output = (data['id'], data['status'],)
+                             data={'version': to_version})
+        output = ()
+        if data.status_code == 201:
+            data = data.json()
+            output = (data['id'], data['status'],)
+        else:
+            _print_error_msg(data)
+
         return (columns, output)
 
     def upgrade(cluster_id, to_version):
-        r = _make_request_with_cluser_id('post', 'upgrade-cluster', cluster_id)
+        r = _make_request_with_cluster_id('post', 'upgrade-cluster',
+                                          cluster_id)
         if r.status_code != 201:
             message = r.json()['message']
             raise Exception(message)
@@ -145,14 +196,14 @@ class UpgradeStatus(Lister):
     def take_action(self, parsed_args):
         upgrade_id = parsed_args.upgrade_id
 
-        res = _make_request_with_cluser_id('get', self.action, upgrade_id)
+        res = _make_request_with_cluster_id('get', self.action, upgrade_id)
 
         columns = ('Service', 'Version', 'Count')
 
         return (columns, res)
 
     def get_status(upgrade_id):
-        r = _make_request_with_cluser_id('get', 'upgrade-status', upgrade_id)
+        r = _make_request_with_cluster_id('get', 'upgrade-status', upgrade_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get upgrade status: %s' % message)
@@ -166,7 +217,7 @@ class PauseUpgrade(Command):
     action = "upgrade-pause"
 
     def pause(cluster_id):
-        r = _make_request_with_cluser_id('put', 'upgrade-pause', cluster_id)
+        r = _make_request_with_cluster_id('put', 'upgrade-pause', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -180,7 +231,8 @@ class RollbackUpgrade(Command):
     action = "upgrade-rollback"
 
     def rollback(cluster_id):
-        r = _make_request_with_cluser_id('put', 'upgrade-rollback', cluster_id)
+        r = _make_request_with_cluster_id('put', 'upgrade-rollback',
+                                          cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -193,7 +245,7 @@ class CancelUpgrade(Command):
     action = "upgrade-cancel"
 
     def cancel(cluster_id):
-        r = _make_request_with_cluser_id('put', 'upgrade-cancel', cluster_id)
+        r = _make_request_with_cluster_id('put', 'upgrade-cancel', cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -205,7 +257,8 @@ class ContinueUpgrade(Command):
     action = "upgrade-continue"
 
     def continue_upgrade(cluster_id):
-        r = _make_request_with_cluser_id('put', 'upgrade-continue', cluster_id)
+        r = _make_request_with_cluster_id('put', 'upgrade-continue',
+                                          cluster_id)
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception(message)
@@ -221,7 +274,7 @@ class DiscoveryMethod(Command):
             'http://{host}:{port}/discover-cluster'.format(
                 host=host, port=port
             ),
-            params={'method': method}
+            data={'method': method}
         )
         if r.status_code != 201:
             message = r.json()['message']
@@ -229,25 +282,51 @@ class DiscoveryMethod(Command):
 
 
 class ListUpgradeVersions(Lister):
-    description = ("Returns list of available versions cluster can be "
-                   "upgraded to")
+    description = ("Show the supported versions that Kostyor is able to "
+                   "upgrade")
     action = "list-upgrade-versions"
 
     def take_action(self, parsed_args):
         columns = ('From Version', 'To Version',)
-
-        data = (('Liberty', 'Mitaka'), ('Mitaka', 'Newton'))
-
-        return (columns, data)
+        data = requests.get(
+            'http://{}:{}/list-upgrade-versions'.format(host, port)).json()
+        data = [i.capitalize() for i in data]
+        versions = ((data[i], data[i+1]) for i in xrange(len(data) - 1))
+        return (columns, versions)
 
     def list(cluster_id):
-        r = _make_request_with_cluser_id('get', 'upgrade-versions', cluster_id)
+        r = _make_request_with_cluster_id('get', 'list-upgrade-versions')
         if r.status_code != 200:
             message = r.json()['message']
             raise Exception('Failed to get list of upgrade versions: %s'
                             % message)
         result = r.json()
         return result
+
+
+class CheckUpgrade(Lister):
+    description = ("Returns list of available versions cluster can be "
+                   "upgraded to")
+    action = "check-upgrade"
+
+    def get_parser(self, prog_name):
+        parser = super(CheckUpgrade, self).get_parser(prog_name)
+        parser.add_argument('cluster_id')
+        return parser
+
+    def take_action(self, parsed_args):
+        cluster_id = parsed_args.cluster_id
+        columns = ('Available Upgrade Versions',)
+        request_str = 'http://{}:{}/upgrade-versions/{}'.format(host,
+                                                                port,
+                                                                cluster_id)
+        data = requests.get(request_str)
+        output = ()
+        if data.status_code == 200:
+            output = ((i.capitalize(),) for i in data.json())
+        else:
+            _print_error_msg(data)
+        return (columns, output)
 
 
 class ListDiscoveryMethods(Lister):

@@ -10,11 +10,23 @@ import six
 
 from kostyor.common import constants
 from kostyor.db import api as db_api
+from kostyor.db.sqlalchemy import models as db_models
 from kostyor.inventory import discover
 from kostyor.inventory import upgrades
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import create_engine
 
 app = Flask(__name__)
 
+# TODO(sc68cal) save the database file in a configurable location
+engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
+db_session = scoped_session(sessionmaker(autocommit=False,
+                                         autoflush=False,
+                                         bind=engine))
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
 def generate_response(status, message):
     message = {'status': status, 'message': message}
@@ -274,4 +286,5 @@ def cluster_list():
 
 
 if __name__ == '__main__':
+    db_models.Base.metadata.create_all(bind=engine)
     app.run()

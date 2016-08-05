@@ -1,8 +1,9 @@
 #!/usr/bin/python
+import os
+
 import logging
 import requests
 import sys
-from six.moves import configparser
 
 from cliff.command import Command
 from cliff.lister import Lister
@@ -13,17 +14,8 @@ from cliff.show import ShowOne
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-CONF = configparser.ConfigParser()
-CONF.read("conf.ini")
-try:
-    host = CONF.get('global', 'host')
-except:
-    host = "localhost"
-
-try:
-    port = CONF.get('global', 'port')
-except:
-    port = 80
+host = os.environ.get('KOSTYOR_HOST', "localhost")
+port = os.environ.get('KOSTYOR_PORT', 80)
 
 
 def _make_request_with_cluster_id(http_method, endpoint, cluster_id):

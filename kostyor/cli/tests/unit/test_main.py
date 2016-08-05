@@ -8,19 +8,19 @@ from kostyor_cli import main
 class CLIUtilsTestCase(base.BaseTestCase):
     @mock.patch('kostyor_cli.main.host', '1.1.1.1')
     @mock.patch('kostyor_cli.main.port', '22')
-    def test__make_request_with_cluster_id(self):
+    def test__make_request_with_cluster_id__get_request__success(self):
         requests.GET = mock.Mock()
         main._make_request_with_cluster_id('GET', 'endpoint',
                                            'cluster-id')
         requests.GET.assert_called_once_with(
             'http://1.1.1.1:22/endpoint/cluster-id')
 
-    def test__make_request_with_cluster_id_wrong_http_method(self):
+    def test__make_request_with_cluster_id__wrong_request_method__error(self):
         self.assertRaises(AttributeError, main._make_request_with_cluster_id,
                           'SEND', 'endpoint', 'cluster-id')
 
     @mock.patch('sys.stdout')
-    def test__print_error_msg(self, stdout_mock):
+    def test__print_error_msg__http_error_handling__success(self, stdout_mock):
         resp = mock.Mock()
         resp.status_code = 400
         resp.json = mock.Mock(return_value={'message': 'Bad request'})
@@ -65,7 +65,7 @@ class ClusterDiscoveryTestCase(CLIBaseTestCase):
                         '--password=qwerty']
         requests.post = mock.Mock(return_value=self.resp)
 
-    def test_discover_cluster(self):
+    def test_discover_cluster__expected_args__correct_request(self):
         self.resp.status_code = 201
         self.app.run(self.command)
         requests.post.assert_called_once_with(
@@ -73,7 +73,7 @@ class ClusterDiscoveryTestCase(CLIBaseTestCase):
             data=self.expected_request_params)
         self.assertEqual(False, main._print_error_msg.called)
 
-    def test_discover_cluster_response_with_error(self):
+    def test_discover_cluster__error_server_resp__print_error_msg(self):
         self.expected_request_params['method'] = 'fake-method'
         self.command[1] = 'fake-method'
         self.app.run(self.command)
@@ -84,7 +84,7 @@ class ClusterDiscoveryTestCase(CLIBaseTestCase):
 
 
 class ClusterListTestCase(CLIBaseTestCase):
-    def test_cluster_list(self):
+    def test_cluster_list__run_without_args__correct_request(self):
         requests.get = mock.Mock()
         expected_request_str = 'http://1.1.1.1:22/cluster-list'
         command = ['cluster-list', ]
@@ -99,13 +99,13 @@ class ClusterStatusTestCase(CLIBaseTestCase):
         self.command = ['cluster-status', '1234']
         requests.get = mock.Mock(return_value=self.resp)
 
-    def test_cluster_status(self):
+    def test_cluster_status__expected_args__correct_request(self):
         self.resp.status_code = 200
         self.app.run(self.command)
         requests.get.assert_called_once_with(self.expected_request_str)
         self.assertEqual(False, main._print_error_msg.called)
 
-    def test_cluster_status_response_with_error(self):
+    def test_cluster_status__error_resp__print_error_msg(self):
         self.app.run(self.command)
         requests.get.assert_called_once_with(self.expected_request_str)
         main._print_error_msg.assert_called_once_with(self.resp)
@@ -121,14 +121,14 @@ class ClusterUpgradeTestCase(CLIBaseTestCase):
                         'mitaka']
         requests.post = mock.Mock(return_value=self.resp)
 
-    def test_upgrade_cluster(self):
+    def test_upgrade_cluster__expected_args__correct_request(self):
         self.resp.status_code = 201
         self.app.run(self.command)
         requests.post.assert_called_once_with(self.expected_request_str,
                                               data=self.expected_params)
         self.assertEqual(False, main._print_error_msg.called)
 
-    def test_upgrade_cluster_response_with_error(self):
+    def test_upgrade_cluster__error_server_resp__print_error_msg(self):
         self.app.run(self.command)
         requests.post.assert_called_once_with(self.expected_request_str,
                                               data=self.expected_params)
@@ -143,13 +143,13 @@ class CheckUpgradeTestCase(CLIBaseTestCase):
                         '1234']
         requests.get = mock.Mock(return_value=self.resp)
 
-    def test_check_upgrade(self):
+    def test_check_upgrade__expected_args__correct_request(self):
         self.resp.status_code = 200
         self.app.run(self.command)
         requests.get.assert_called_once_with(self.expected_request_str)
         self.assertEqual(False, main._print_error_msg.called)
 
-    def test_check_upgrade_response_with_error(self):
+    def test_check_upgrade__error_server_resp__print_error_msg(self):
         self.app.run(self.command)
         requests.get.assert_called_once_with(self.expected_request_str)
         main._print_error_msg.assert_called_once_with(self.resp)
@@ -161,7 +161,7 @@ class ListUpgradeVersionsTestCase(CLIBaseTestCase):
         self.expected_request_str = 'http://1.1.1.1:22/list-upgrade-versions'
         self.command = ['list-upgrade-versions']
 
-    def test_list_upgrade_versions(self):
+    def test_list_upgrade__run_without_args__correct_request(self):
         requests.get = mock.Mock(return_value=self.resp)
         self.app.run(self.command)
         requests.get.assert_called_once_with(self.expected_request_str)

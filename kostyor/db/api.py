@@ -1,4 +1,15 @@
-from kostyor.db.sqlalchemy import models
+from kostyor.db import models
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+
+# TODO(sc68cal) save the database file in a configurable location
+engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True,
+                       echo=True)
+db_session = scoped_session(sessionmaker(autocommit=False,
+                                         autoflush=False,
+                                         bind=engine))
 
 
 def get_cluster_status(context, cluster_id):

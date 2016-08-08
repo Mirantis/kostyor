@@ -1,4 +1,4 @@
-from kostyor.db.sqlalchemy import models
+from kostyor.db import models
 from kostyor.db import api as db_api
 
 import sqlalchemy as sa

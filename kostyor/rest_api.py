@@ -155,7 +155,7 @@ def create_cluster_upgrade(cluster_id):
         )
         return resp
 
-    cluster = db_api.get_cluster_status(cluster_id)
+    cluster = db_api.get_cluster_status(db_session, cluster_id)
     if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
             constants.OPENSTACK_VERSIONS.index(to_version)):
         resp = generate_response(

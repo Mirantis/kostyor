@@ -13,7 +13,6 @@ from kostyor.inventory import discover
 from kostyor.inventory import upgrades
 
 from kostyor.db import api as db_api
-from kostyor.db import models
 from kostyor.db.api import db_session
 
 app = Flask(__name__)
@@ -22,6 +21,7 @@ app = Flask(__name__)
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
+
 
 def generate_response(status, message):
     message = {'status': status, 'message': message}

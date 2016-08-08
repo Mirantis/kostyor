@@ -5,8 +5,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 # TODO(sc68cal) save the database file in a configurable location
-engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True,
-                       echo=True)
+engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))

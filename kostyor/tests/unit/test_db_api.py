@@ -13,7 +13,7 @@ class KostyorTestContext(object):
     session = None
 
     def __init__(self):
-        self.engine = sa.create_engine('sqlite:///:memory:', echo=True)
+        self.engine = sa.create_engine('sqlite:///:memory:')
         self.session = sessionmaker(bind=self.engine)()
 
 

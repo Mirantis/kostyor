@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 
 from oslotest import base
 
+from kostyor.common import constants
+
 
 class KostyorTestContext(object):
     "Kostyor Database Context."
@@ -24,6 +26,15 @@ class DbApiTestCase(base.BaseTestCase):
         models.Base.metadata.create_all(self.context.engine)
 
     def test_create_cluster(self):
-        result = db_api.create_cluster(self.context.session,
-                                       "test", "Mitaka", "READY")
-        self.assertIsInstance(result, models.Cluster)
+        db_api.create_cluster(self.context.session, "test",
+                              constants.MITAKA, constants.READY_FOR_UPGRADE)
+        self.context.session.commit()
+
+        result = db_api.get_clusters(self.context.session)
+
+        self.assertIn("clusters", result)
+        self.assertGreater(len(result['clusters']), 0)
+
+        result_data = result['clusters'][0]
+
+        self.assertIsNotNone(result_data['id'])

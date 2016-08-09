@@ -11,7 +11,7 @@ db_session = scoped_session(sessionmaker(autocommit=False,
                                          bind=engine))
 
 
-def get_cluster_status(context, cluster_id):
+def get_cluster_status(db_session, cluster_id):
     # TODO fix it later
     return {'id': cluster_id,
             'name': "Sean's Lab",
@@ -19,40 +19,40 @@ def get_cluster_status(context, cluster_id):
             'status': "READY"}
 
 
-def get_upgrade_status(context, cluster_id):
-    u_task = context.session.query(models.UpgradeTask).get(cluster_id)
+def get_upgrade_status(db_session, cluster_id):
+    u_task = db_session.query(models.UpgradeTask).get(cluster_id)
     return u_task.to_dict()
 
 
-def get_discovery_methods(context):
+def get_discovery_methods(db_session):
     return {'items': [{'method': 'method1'}, {'method': 'method2'}]}
 
 
-def get_upgrade_versions(context, cluster_id):
+def get_upgrade_versions(db_session, cluster_id):
     return {'items': [{'version': 'version1'}, {'version': 'version2'}]}
 
 
-def create_discovery_method(context, method):
+def create_discovery_method(db_session, method):
     return {'id': '1', 'method': method}
 
 
-def create_cluster_upgrade(context, cluster_id, to_version):
+def create_cluster_upgrade(db_session, cluster_id, to_version):
     return {'id': cluster_id, 'status': 'upgrading'}
 
 
-def cancel_cluster_upgrade(context, cluster_id):
+def cancel_cluster_upgrade(db_session, cluster_id):
     return {'id': cluster_id, 'status': 'canceling'}
 
 
-def continue_cluster_upgrade(context, cluster_id):
+def continue_cluster_upgrade(db_session, cluster_id):
     return {'id': cluster_id, 'status': 'upgrading'}
 
 
-def pause_cluster_upgrade(context, cluster_id):
+def pause_cluster_upgrade(db_session, cluster_id):
     return {'id': cluster_id, 'status': 'paused'}
 
 
-def rollback_cluster_upgrade(context, cluster_id):
+def rollback_cluster_upgrade(db_session, cluster_id):
     return {'id': cluster_id, 'status': 'rolling back'}
 
 
@@ -61,21 +61,21 @@ def get_clusters(context):
                           'READY'}]}
 
 
-def create_host(context, name, cluster_id):
+def create_host(db_session, name, cluster_id):
     return {'id': '1234',
             'name': name,
             'cluster_id': cluster_id}
 
 
-def create_service(context, name, host_id, version):
+def create_service(db_session, name, host_id, version):
     return {'id': '4321',
             'name': name,
             'host_id': host_id,
             'version': version}
 
 
-def create_cluster(context, name, version, status):
+def create_cluster(db_session, name, version, status):
     kwargs = {"name": name, "version": version, "status": status}
     cluster = models.Cluster(**kwargs)
-    context.session.add(cluster)
+    db_session.add(cluster)
     return cluster

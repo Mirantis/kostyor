@@ -24,5 +24,6 @@ class DbApiTestCase(base.BaseTestCase):
         models.Base.metadata.create_all(self.context.engine)
 
     def test_create_cluster(self):
-        result = db_api.create_cluster(self.context, "test", "Mitaka", "READY")
+        result = db_api.create_cluster(self.context.session,
+                                       "test", "Mitaka", "READY")
         self.assertIsInstance(result, models.Cluster)

@@ -1,5 +1,7 @@
 from kostyor.db import models
 
+from six.moves import map
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -56,9 +58,10 @@ def rollback_cluster_upgrade(db_session, cluster_id):
     return {'id': cluster_id, 'status': 'rolling back'}
 
 
-def get_clusters(context):
-    return {'clusters': [{'id': 'TEST', 'name': 'Fake Cluster', 'status':
-                          'READY'}]}
+def get_clusters(db_session):
+    return {'clusters': list(map(lambda x: {'id': x.id, 'name': x.name,
+                                            'status': x.status},
+                                 db_session.query(models.Cluster).all()))}
 
 
 def create_host(db_session, name, cluster_id):

@@ -4,5 +4,6 @@ ChangeLog
 kostyor.egg-info/
 doc/build
 .testrepository
+.eggs
 build
 dist

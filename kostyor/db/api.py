@@ -1,3 +1,4 @@
+from kostyor.common import constants
 from kostyor.db import models
 
 from six.moves import map
@@ -6,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 
-# TODO(sc68cal) save the database file in a configurable location
+# TODO (sc68cal) save the database file in a configurable location
 engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
@@ -14,11 +15,13 @@ db_session = scoped_session(sessionmaker(autocommit=False,
 
 
 def get_cluster_status(db_session, cluster_id):
-    # TODO fix it later
-    return {'id': cluster_id,
-            'name': "Sean's Lab",
-            'version': "mitaka",
-            'status': "READY"}
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    if not cluster:
+        raise Exception("Cluster with ID: %s not found" % cluster_id)
+    return {'id': cluster.id,
+            'name': cluster.name,
+            'version': cluster.version,
+            'status': cluster.status}
 
 
 def get_upgrade_status(db_session, cluster_id):
@@ -27,11 +30,11 @@ def get_upgrade_status(db_session, cluster_id):
 
 
 def get_discovery_methods(db_session):
-    return {'items': [{'method': 'method1'}, {'method': 'method2'}]}
+    return {'discovery_methods': constants.DISCOVERY_METHODS}
 
 
 def get_upgrade_versions(db_session, cluster_id):
-    return {'items': [{'version': 'version1'}, {'version': 'version2'}]}
+    return {'versions': constants.OPENSTACK_VERSIONS}
 
 
 def create_discovery_method(db_session, method):
@@ -39,23 +42,43 @@ def create_discovery_method(db_session, method):
 
 
 def create_cluster_upgrade(db_session, cluster_id, to_version):
-    return {'id': cluster_id, 'status': 'upgrading'}
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster.status = constants.UPGRADE_IN_PROGRESS
+    db_session.commit()
+    # TODO(sc68cal) RPC or calls to task broker to start upgrade
+    return {'id': cluster_id, 'status': constants.UPGRADE_IN_PROGRESS}
 
 
 def cancel_cluster_upgrade(db_session, cluster_id):
-    return {'id': cluster_id, 'status': 'canceling'}
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster.status = constants.UPGRADE_CANCELLED
+    db_session.commit()
+    # TODO(sc68cal) RPC or calls to task broker to cancel
+    return {'id': cluster_id, 'status': constants.UPGRADE_CANCELLED}
 
 
 def continue_cluster_upgrade(db_session, cluster_id):
-    return {'id': cluster_id, 'status': 'upgrading'}
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster.status = constants.UPGRADE_IN_PROGRESS
+    db_session.commit()
+    # TODO(sc68cal) RPC or calls to task broker to continue
+    return {'id': cluster_id, 'status': constants.UPGRADE_IN_PROGRESS}
 
 
 def pause_cluster_upgrade(db_session, cluster_id):
-    return {'id': cluster_id, 'status': 'paused'}
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster.status = constants.UPGRADE_PAUSED
+    db_session.commit()
+    # TODO(sc68cal) RPC or calls to task broker to pause
+    return {'id': cluster_id, 'status': constants.UPGRADE_PAUSED}
 
 
 def rollback_cluster_upgrade(db_session, cluster_id):
-    return {'id': cluster_id, 'status': 'rolling back'}
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster.status = constants.UPGRADE_ROLLBACK
+    db_session.commit()
+    # TODO(sc68cal) RPC or calls to task broker to start rollback
+    return {'id': cluster_id, 'status': constants.UPGRADE_ROLLBACK}
 
 
 def get_clusters(db_session):
@@ -65,16 +88,27 @@ def get_clusters(db_session):
 
 
 def create_host(db_session, name, cluster_id):
-    return {'id': '1234',
-            'name': name,
-            'cluster_id': cluster_id}
+    new_host = models.Host()
+    new_host.name = name
+    new_host.cluster_id = cluster_id
+    db_session.add(new_host)
+    db_session.commit()
+    return {'id': new_host.id,
+            'name': new_host.name,
+            'cluster_id': new_host.cluster_id}
 
 
 def create_service(db_session, name, host_id, version):
-    return {'id': '4321',
-            'name': name,
-            'host_id': host_id,
-            'version': version}
+    new_service = models.Service()
+    new_service.name = name
+    new_service.host_id = host_id
+    new_service.version = version
+    db_session.add(new_service)
+    db_session.commit()
+    return {'id': new_service.id,
+            'name': new_service.name,
+            'host_id': new_service.host_id,
+            'version': new_service.version}
 
 
 def create_cluster(db_session, name, version, status):

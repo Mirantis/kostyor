@@ -155,7 +155,10 @@ def create_cluster_upgrade(cluster_id):
         )
         return resp
 
-    cluster = db_api.get_cluster_status(db_session, cluster_id)
+    try:
+        cluster = db_api.get_cluster_status(db_session, cluster_id)
+    except Exception as ex:
+        return generate_response(404, ex.message)
     if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
             constants.OPENSTACK_VERSIONS.index(to_version)):
         resp = generate_response(

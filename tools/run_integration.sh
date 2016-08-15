@@ -8,6 +8,7 @@ python kostyor/cli/setup.py install
 
 # Start the REST API
 
-python kostyor/rest_api.py
+screen -S kostyor -d -m python kostyor/rest_api.py
 
 
+screen -X -S kostyor quit

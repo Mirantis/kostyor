@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # install the REST API and CLI
 
 KOSTYOR_DIR=$(pwd)

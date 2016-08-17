@@ -32,7 +32,7 @@ def generate_response(status, message):
 
 @app.route('/cluster-status/<cluster_id>')
 def get_cluster_status(cluster_id):
-    cluster = db_api.get_cluster_status(cluster_id)
+    cluster = db_api.get_cluster_status(db_session, cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -278,9 +278,8 @@ def rollback_cluster_upgrade(cluster_id):
 
 @app.route('/cluster-list', methods=['GET'])
 def cluster_list():
-    clusters = db_api.get_clusters()
-    if clusters:
-        return jsonify(clusters)
+    clusters = db_api.get_clusters(db_session)
+    return jsonify(clusters)
 
 
 if __name__ == '__main__':

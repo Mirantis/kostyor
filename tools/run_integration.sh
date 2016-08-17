@@ -23,7 +23,7 @@ python /tmp/Kostyor-cli/setup.py install
 
 cd $KOSTYOR_DIR
 
-python Kostyor/rest_api.py &
+python kostyor/rest_api.py &
 
 sleep 5
 
@@ -31,4 +31,4 @@ kostyor cluster-list
 
 kostyor cluster-status TEST
 
-pkill -f 'python Kostyor/rest_api.py'
+pkill -f 'python kostyor/rest_api.py'

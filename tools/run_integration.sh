@@ -12,18 +12,18 @@ if ! [ -d /tmp/kostyor-cli ]; then
     cd /tmp
     git clone https://github.com/sc68cal/Kostyor-cli.git
 else
-    git -C /tmp/kostyor-cli pull
+    git -C /tmp/Kostyor-cli pull
 fi
 
-cd /tmp/kostyor-cli
+cd /tmp/Kostyor-cli
 
-python /tmp/kostyor-cli/setup.py install
+python /tmp/Kostyor-cli/setup.py install
 
 # Start the REST API
 
 cd $KOSTYOR_DIR
 
-python kostyor/rest_api.py &
+python Kostyor/rest_api.py &
 
 sleep 5
 
@@ -31,4 +31,4 @@ kostyor cluster-list
 
 kostyor cluster-status TEST
 
-pkill -f 'python kostyor/rest_api.py'
+pkill -f 'python Kostyor/rest_api.py'

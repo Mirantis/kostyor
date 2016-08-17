@@ -21,6 +21,8 @@ cd /tmp/Kostyor-cli
 
 python /tmp/Kostyor-cli/setup.py install
 
+python $KOSTYOR_DIR/tools/create_database.py
+
 # Start the REST API
 
 cd $KOSTYOR_DIR

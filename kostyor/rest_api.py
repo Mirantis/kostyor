@@ -99,10 +99,10 @@ def discover_cluster():
     # At this point only OpenStack-based discovery is implemented.
     if discovery_method == constants.OPENSTACK:
         sess = session.Session(auth=v2.Password(
-            username=request.args.get('username'),
-            password=request.args.get('password'),
-            tenant_name=request.args.get('tenant_name'),
-            auth_url=request.args.get('auth_url')))
+            username=request.form.get('username'),
+            password=request.form.get('password'),
+            tenant_name=request.form.get('tenant_name'),
+            auth_url=request.form.get('auth_url')))
         cluster_discovery = discover.OpenStackServiceDiscovery(sess)
         try:
             services = cluster_discovery.discover()
@@ -113,7 +113,7 @@ def discover_cluster():
             )
             return resp
 
-        new_cluster = db_api.create_cluster(request.args.get('cluster_name'),
+        new_cluster = db_api.create_cluster(request.form.get('cluster_name'),
                                             constants.UNDEFINED,
                                             constants.NOT_READY_FOR_UPGRADE)
         host_service_map = defaultdict(list)

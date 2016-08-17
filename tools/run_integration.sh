@@ -33,6 +33,8 @@ sleep 5
 
 kostyor cluster-list
 
-kostyor cluster-status TEST
+CLUSTER_ID=$(kostyor cluster-list -f value -c 'Cluster ID' | tail -n 1)
+
+kostyor cluster-status $CLUSTER_ID
 
 pkill -f 'python kostyor/rest_api.py'

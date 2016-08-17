@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # install the REST API and CLI
 
 KOSTYOR_DIR=$(pwd)
@@ -19,6 +21,8 @@ cd /tmp/Kostyor-cli
 
 python /tmp/Kostyor-cli/setup.py install
 
+python $KOSTYOR_DIR/tools/create_database.py
+
 # Start the REST API
 
 cd $KOSTYOR_DIR
@@ -29,6 +33,8 @@ sleep 5
 
 kostyor cluster-list
 
-kostyor cluster-status TEST
+CLUSTER_ID=$(kostyor cluster-list -f value -c 'Cluster ID' | tail -n 1)
+
+kostyor cluster-status $CLUSTER_ID
 
 pkill -f 'python kostyor/rest_api.py'

@@ -1,9 +1,12 @@
-from kostyor.db.sqlalchemy import models
+from kostyor.db import models
+from kostyor.db import api as db_api
 
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
 from oslotest import base
+
+from kostyor.common import constants
 
 
 class KostyorTestContext(object):
@@ -12,7 +15,7 @@ class KostyorTestContext(object):
     session = None
 
     def __init__(self):
-        self.engine = sa.create_engine('sqlite:///:memory:', echo=True)
+        self.engine = sa.create_engine('sqlite:///:memory:')
         self.session = sessionmaker(bind=self.engine)()
 
 
@@ -21,3 +24,28 @@ class DbApiTestCase(base.BaseTestCase):
         super(DbApiTestCase, self).setUp()
         self.context = KostyorTestContext()
         models.Base.metadata.create_all(self.context.engine)
+
+    def test_create_cluster(self):
+        db_api.create_cluster(self.context.session, "test",
+                              constants.MITAKA, constants.READY_FOR_UPGRADE)
+
+        result = db_api.get_clusters(self.context.session)
+
+        self.assertIn("clusters", result)
+        self.assertGreater(len(result['clusters']), 0)
+
+        result_data = result['clusters'][0]
+
+        self.assertIsNotNone(result_data['id'])
+
+    def test_get_all_clusters(self):
+
+        for i in range(0, 10):
+            db_api.create_cluster(self.context.session,
+                                  "test" + str(i),
+                                  constants.MITAKA,
+                                  constants.READY_FOR_UPGRADE)
+
+        expected = db_api.get_clusters(self.context.session)
+
+        self.assertEqual(len(expected['clusters']), 10)

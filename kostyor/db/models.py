@@ -25,6 +25,12 @@ class Cluster(Base, HasId):
 
     status = sa.Column(sa.Enum(*constants.STATUSES))
 
+    def __init__(self, name, version, status):
+        super(Cluster, self).__init__()
+        self.name = name
+        self.version = version
+        self.status = status
+
 
 class Host(Base, HasId):
     __tablename__ = 'hosts'
@@ -32,20 +38,13 @@ class Host(Base, HasId):
     hostname = sa.Column(sa.String(255))
     cluster_id = sa.Column(sa.ForeignKey('clusters.id'))
 
-    cluster = orm.relationship(Cluster, backref=orm.backref('clusters',
-                                                            cascade='delete'))
-
 
 class Service(Base, HasId):
     __tablename__ = 'services'
 
     name = sa.Column(sa.String(255))
     host_id = sa.Column(sa.ForeignKey('hosts.id'))
-
     version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
-
-    host = orm.relationship(Host,
-                            backref=orm.backref('hosts', cascade='delete'))
 
 
 class UpgradeTask(Base, HasId):
@@ -56,15 +55,12 @@ class UpgradeTask(Base, HasId):
     upgrade_start_time = sa.Column(sa.DateTime)
     upgrade_end_time = sa.Column(sa.DateTime)
 
-    cluster = orm.relationship(Cluster, backref=orm.backref('clusters',
-                                                            cascade='delete'))
-
 
 class ServiceUpgradeRecord(Base, HasId):
     __tablename__ = 'service_upgrade_records'
 
     service_id = sa.Column(sa.ForeignKey('services.id'))
-    upgrade_task_id = sa.Column(sa.ForeignKey('upgrade_task.id'))
+    upgrade_task_id = sa.Column(sa.ForeignKey('upgrade_tasks.id'))
 
     service = orm.relationship(Service,
                                backref=orm.backref('services',

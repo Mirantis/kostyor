@@ -9,11 +9,18 @@ from keystoneauth1.identity import v2
 import six
 
 from kostyor.common import constants
-from kostyor.db import api as db_api
 from kostyor.inventory import discover
 from kostyor.inventory import upgrades
 
+from kostyor.db import api as db_api
+from kostyor.db.api import db_session
+
 app = Flask(__name__)
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
 
 def generate_response(status, message):
@@ -25,7 +32,7 @@ def generate_response(status, message):
 
 @app.route('/cluster-status/<cluster_id>')
 def get_cluster_status(cluster_id):
-    cluster = db_api.get_cluster_status(cluster_id)
+    cluster = db_api.get_cluster_status(db_session, cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -148,7 +155,10 @@ def create_cluster_upgrade(cluster_id):
         )
         return resp
 
-    cluster = db_api.get_cluster_status(cluster_id)
+    try:
+        cluster = db_api.get_cluster_status(db_session, cluster_id)
+    except Exception as ex:
+        return generate_response(404, ex.message)
     if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
             constants.OPENSTACK_VERSIONS.index(to_version)):
         resp = generate_response(
@@ -268,9 +278,8 @@ def rollback_cluster_upgrade(cluster_id):
 
 @app.route('/cluster-list', methods=['GET'])
 def cluster_list():
-    clusters = db_api.get_clusters()
-    if clusters:
-        return jsonify(clusters)
+    clusters = db_api.get_clusters(db_session)
+    return jsonify(clusters)
 
 
 if __name__ == '__main__':

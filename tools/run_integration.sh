@@ -9,7 +9,8 @@ export KOSTYOR_PORT=5000
 python setup.py install
 
 if ! [ -d /tmp/kostyor-cli ]; then
-    git clone https://github.com/sc68cal/Kostyor-cli.git -c /tmp/kostyor-cli
+    cd /tmp
+    git clone https://github.com/sc68cal/Kostyor-cli.git
 else
     git -C /tmp/kostyor-cli pull
 fi

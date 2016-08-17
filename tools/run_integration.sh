@@ -23,7 +23,7 @@ python /tmp/kostyor-cli/setup.py install
 
 cd $KOSTYOR_DIR
 
-screen -S kostyor -d -m python kostyor/rest_api.py
+python kostyor/rest_api.py &
 
 sleep 5
 

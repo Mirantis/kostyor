@@ -37,10 +37,10 @@ class DbApiTestCase(base.BaseTestCase):
         self.context.connection.close()
 
     def test_create_cluster(self):
-        db_api.create_cluster(self.context.session, "test",
-                              constants.MITAKA, constants.READY_FOR_UPGRADE)
+        db_api.create_cluster("test", constants.MITAKA,
+                              constants.READY_FOR_UPGRADE)
 
-        result = db_api.get_clusters(self.context.session)
+        result = db_api.get_clusters()
 
         self.assertIn("clusters", result)
         self.assertGreater(len(result['clusters']), 0)
@@ -52,11 +52,9 @@ class DbApiTestCase(base.BaseTestCase):
     def test_get_all_clusters(self):
 
         for i in range(0, 10):
-            db_api.create_cluster(self.context.session,
-                                  "test" + str(i),
-                                  constants.MITAKA,
+            db_api.create_cluster("test" + str(i), constants.MITAKA,
                                   constants.READY_FOR_UPGRADE)
 
-        expected = db_api.get_clusters(self.context.session)
+        expected = db_api.get_clusters()
 
         self.assertEqual(len(expected['clusters']), 10)

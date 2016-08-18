@@ -32,7 +32,7 @@ def generate_response(status, message):
 
 @app.route('/cluster-status/<cluster_id>')
 def get_cluster_status(cluster_id):
-    cluster = db_api.get_cluster_status(db_session, cluster_id)
+    cluster = db_api.get_cluster_status(cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -156,7 +156,7 @@ def create_cluster_upgrade(cluster_id):
         return resp
 
     try:
-        cluster = db_api.get_cluster_status(db_session, cluster_id)
+        cluster = db_api.get_cluster_status(cluster_id)
     except Exception as ex:
         return generate_response(404, ex.message)
     if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
@@ -278,7 +278,7 @@ def rollback_cluster_upgrade(cluster_id):
 
 @app.route('/cluster-list', methods=['GET'])
 def cluster_list():
-    clusters = db_api.get_clusters(db_session)
+    clusters = db_api.get_clusters()
     return jsonify(clusters)
 
 

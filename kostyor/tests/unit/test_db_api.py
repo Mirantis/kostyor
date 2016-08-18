@@ -17,13 +17,24 @@ class KostyorTestContext(object):
     def __init__(self):
         self.engine = sa.create_engine('sqlite:///:memory:')
         self.session = sessionmaker(bind=self.engine)()
+        self.connection = self.engine.connect()
+        self.transaction = self.connection.begin()
 
 
 class DbApiTestCase(base.BaseTestCase):
     def setUp(self):
         super(DbApiTestCase, self).setUp()
         self.context = KostyorTestContext()
+        db_api.db_session = self.context.session
+        db_api.engine = self.context.engine
         models.Base.metadata.create_all(self.context.engine)
+        self.context.session.commit()
+
+    def tearDown(self):
+        super(DbApiTestCase, self).tearDown()
+        self.context.session.close()
+        self.context.transaction.rollback()
+        self.context.connection.close()
 
     def test_create_cluster(self):
         db_api.create_cluster(self.context.session, "test",

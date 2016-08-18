@@ -17,19 +17,30 @@ class KostyorTestContext(object):
     def __init__(self):
         self.engine = sa.create_engine('sqlite:///:memory:')
         self.session = sessionmaker(bind=self.engine)()
+        self.connection = self.engine.connect()
+        self.transaction = self.connection.begin()
 
 
 class DbApiTestCase(base.BaseTestCase):
     def setUp(self):
         super(DbApiTestCase, self).setUp()
         self.context = KostyorTestContext()
+        db_api.db_session = self.context.session
+        db_api.engine = self.context.engine
         models.Base.metadata.create_all(self.context.engine)
+        self.context.session.commit()
+
+    def tearDown(self):
+        super(DbApiTestCase, self).tearDown()
+        self.context.session.close()
+        self.context.transaction.rollback()
+        self.context.connection.close()
 
     def test_create_cluster(self):
-        db_api.create_cluster(self.context.session, "test",
-                              constants.MITAKA, constants.READY_FOR_UPGRADE)
+        db_api.create_cluster("test", constants.MITAKA,
+                              constants.READY_FOR_UPGRADE)
 
-        result = db_api.get_clusters(self.context.session)
+        result = db_api.get_clusters()
 
         self.assertIn("clusters", result)
         self.assertGreater(len(result['clusters']), 0)
@@ -41,11 +52,9 @@ class DbApiTestCase(base.BaseTestCase):
     def test_get_all_clusters(self):
 
         for i in range(0, 10):
-            db_api.create_cluster(self.context.session,
-                                  "test" + str(i),
-                                  constants.MITAKA,
+            db_api.create_cluster("test" + str(i), constants.MITAKA,
                                   constants.READY_FOR_UPGRADE)
 
-        expected = db_api.get_clusters(self.context.session)
+        expected = db_api.get_clusters()
 
         self.assertEqual(len(expected['clusters']), 10)

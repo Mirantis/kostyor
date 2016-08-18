@@ -8,6 +8,6 @@ from kostyor.db.api import db_session
 
 models.Base.metadata.create_all(db_session.bind)
 
-api.create_cluster(db_session, "test", constants.MITAKA,
+api.create_cluster("test", constants.MITAKA,
                    constants.READY_FOR_UPGRADE)
 db_session.commit()

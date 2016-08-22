@@ -63,7 +63,7 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         # TODO(sc68cal) God help us if someone is using a IPv6 literal in
         # their service catalog
         service_map = []
-        host_regex = re.compile("https?://(.*):\d*")
+        host_regex = re.compile("https?://([^/^:]*)")
 
         client = k_client.Client(session=self.session)
         # TODO(sc68cal) Handle multiple regions and cells

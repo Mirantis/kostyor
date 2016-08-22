@@ -132,7 +132,7 @@ def discover_cluster():
         for host, service in six.iteritems(host_service_map):
             for s in service:
                 db_api.create_service(s, hosts_ids[host],
-                                      constants.NOT_READY_FOR_UPGRADE)
+                                      constants.UNKNOWN)
     else:
         resp = generate_response(
             404,

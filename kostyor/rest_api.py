@@ -121,7 +121,7 @@ def discover_cluster():
             return resp
 
         new_cluster = db_api.create_cluster(request.form.get('cluster_name'),
-                                            constants.UNDEFINED,
+                                            constants.UNKNOWN,
                                             constants.NOT_READY_FOR_UPGRADE)
         host_service_map = defaultdict(list)
         for s in services:
@@ -159,6 +159,8 @@ def create_cluster_upgrade(cluster_id):
         cluster = db_api.get_cluster_status(cluster_id)
     except Exception as ex:
         return generate_response(404, ex.message)
+    if cluster['version'] == constants.UNKNOWN:
+        resp = generate_response(400, 'Cluster version is unknown')
     if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
             constants.OPENSTACK_VERSIONS.index(to_version)):
         resp = generate_response(

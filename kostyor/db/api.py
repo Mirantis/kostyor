@@ -116,4 +116,7 @@ def create_cluster(name, version, status):
     cluster = models.Cluster(**kwargs)
     db_session.add(cluster)
     db_session.commit()
-    return cluster
+    return {'id': cluster.id,
+            'name': cluster.name,
+            'version': cluster.version,
+            'status': cluster.status}

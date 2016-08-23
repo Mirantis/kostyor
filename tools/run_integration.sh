@@ -37,4 +37,8 @@ CLUSTER_ID=$(kostyor cluster-list -f value -c 'Cluster ID' | tail -n 1)
 
 kostyor cluster-status $CLUSTER_ID
 
+kostyor list-upgrade-versions
+
+kostyor list-discovery-methods
+
 pkill -f 'python kostyor/rest_api.py'

@@ -303,13 +303,13 @@ class KostyorRestAPITest(unittest.TestCase):
         fake_discover.assert_called_once_with()
         fake_create_cluster.assert_called_once_with(
             'test-cluster',
-            constants.UNDEFINED,
+            constants.UNKNOWN,
             constants.NOT_READY_FOR_UPGRADE)
         fake_create_host.assert_called_once_with('1.2.3.4', 'cluster-id')
         fake_create_service.assert_called_once_with(
             'nova-api',
             'host-id',
-            constants.NOT_READY_FOR_UPGRADE)
+            constants.UNKNOWN)
 
     def test_discover_cluster_unsupported_method_error_response(self):
         res = self.app.post('/discover-cluster',

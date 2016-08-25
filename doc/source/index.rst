@@ -9,3 +9,4 @@ laid out in the `OPNFV Escalator project <https://wiki.opnfv.org/display/escalat
     arch.rst
     cli.rst
     rest_api.rst
+    ansible_driver.rst

@@ -169,6 +169,10 @@ def create_cluster_upgrade(cluster_id):
         )
         return resp
 
+    if cluster['status'] == constants.UPGRADE_IN_PROGRESS:
+        return generate_response(400, "Cluster %s already has an upgrade in \
+                                 progress" % cluster_id)
+
     upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
     if not upgrade:
         resp = generate_response(

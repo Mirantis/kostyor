@@ -1,3 +1,5 @@
+import copy
+
 from collections import defaultdict
 
 from flask import Flask
@@ -80,7 +82,9 @@ def get_upgrade_versions(cluster_id):
 
 @app.route('/list-upgrade-versions')
 def list_upgrade_versions():
-    return jsonify(constants.OPENSTACK_VERSIONS)
+    res = copy.copy(constants.OPENSTACK_VERSIONS)
+    res.remove(constants.UNKNOWN)
+    return jsonify(res)
 
 
 @app.route('/create-discovery-method', methods=['POST'])

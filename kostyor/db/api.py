@@ -108,12 +108,12 @@ def get_clusters():
 
 def create_host(name, cluster_id):
     new_host = models.Host()
-    new_host.name = name
+    new_host.hostname = name
     new_host.cluster_id = cluster_id
     db_session.add(new_host)
     db_session.commit()
     return {'id': new_host.id,
-            'name': new_host.name,
+            'hostname': new_host.hostname,
             'cluster_id': new_host.cluster_id}
 
 

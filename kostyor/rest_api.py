@@ -1,3 +1,5 @@
+import copy
+
 from collections import defaultdict
 
 from flask import Flask
@@ -80,7 +82,9 @@ def get_upgrade_versions(cluster_id):
 
 @app.route('/list-upgrade-versions')
 def list_upgrade_versions():
-    return jsonify(constants.OPENSTACK_VERSIONS)
+    res = copy.copy(constants.OPENSTACK_VERSIONS)
+    res.remove(constants.UNKNOWN)
+    return jsonify(res)
 
 
 @app.route('/create-discovery-method', methods=['POST'])
@@ -168,6 +172,10 @@ def create_cluster_upgrade(cluster_id):
             'Cluster version is the same or newer than %s' % to_version
         )
         return resp
+
+    if cluster['status'] == constants.UPGRADE_IN_PROGRESS:
+        return generate_response(400, "Cluster %s already has an upgrade in \
+                                 progress" % cluster_id)
 
     upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
     if not upgrade:

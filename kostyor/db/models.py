@@ -54,6 +54,7 @@ class UpgradeTask(Base, HasId):
     to_version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
     upgrade_start_time = sa.Column(sa.DateTime)
     upgrade_end_time = sa.Column(sa.DateTime)
+    status = sa.Column(sa.Enum(*constants.STATUSES))
 
 
 class ServiceUpgradeRecord(Base, HasId):

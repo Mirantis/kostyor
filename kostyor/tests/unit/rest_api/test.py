@@ -102,7 +102,8 @@ class KostyorRestAPITest(unittest.TestCase):
                                         fake_get_cluster_status,
                                         fake_db_create_cluster_upgrade):
         fake_db_create_cluster_upgrade.return_value = None
-        fake_get_cluster_status.return_value = {'version': 'liberty'}
+        fake_get_cluster_status.return_value = {'version': 'liberty', 'status':
+                                                constants.READY_FOR_UPGRADE}
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'mitaka'})
         self.assertEqual(404, res.status_code)
@@ -118,7 +119,7 @@ class KostyorRestAPITest(unittest.TestCase):
         fake_get_cluster_status.return_value = {'id': self.cluster_id, 'name':
                                                 'test cluster', 'version':
                                                 'liberty', 'status':
-                                                constants.UPGRADE_IN_PROGRESS}
+                                                constants.READY_FOR_UPGRADE}
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'newton'})
         data = res.data.decode('utf-8')
@@ -140,10 +141,10 @@ class KostyorRestAPITest(unittest.TestCase):
     @mock.patch('kostyor.db.api.cancel_cluster_upgrade')
     def test_cancel_cluster_upgrade_on_inventory_failure(
             self,
-            fake_db_cancel_cluster_upgrade,
+            fake_db_cancel,
             fake_inventory_cancel_upgrade):
-        fake_db_cancel_cluster_upgrade.return_value = {'id': self.cluster_id,
-                                                       'status': 'canceling'}
+        fake_db_cancel.return_value = {'id': self.cluster_id, 'status':
+                                       constants.UPGRADE_CANCELLED}
         fake_inventory_cancel_upgrade.return_value = 1
         res = self.app.put('/upgrade-cancel/{}'.format(self.cluster_id))
         self.assertEqual(500, res.status_code)

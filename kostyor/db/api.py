@@ -1,3 +1,5 @@
+import datetime
+
 from kostyor.common import constants
 from kostyor.db import models
 
@@ -14,6 +16,12 @@ db_session = scoped_session(sessionmaker(autocommit=False,
                                          bind=engine))
 
 
+def _get_most_recent_upgrade_task(cluster_id):
+    q = db_session.query(models.UpgradeTask).filter_by(
+        cluster_id=cluster_id).order_by(models.UpgradeTask.upgrade_start_time)
+    return q.first()
+
+
 def get_cluster_status(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
     if not cluster:
@@ -25,7 +33,7 @@ def get_cluster_status(cluster_id):
 
 
 def get_upgrade_status(cluster_id):
-    u_task = db_session.query(models.UpgradeTask).get(cluster_id)
+    u_task = _get_most_recent_upgrade_task(cluster_id)
     return u_task.to_dict()
 
 
@@ -44,6 +52,12 @@ def create_discovery_method(method):
 def create_cluster_upgrade(cluster_id, to_version):
     cluster = db_session.query(models.Cluster).get(cluster_id)
     cluster.status = constants.UPGRADE_IN_PROGRESS
+    u_task = models.UpgradeTask()
+    u_task.cluster_id = cluster_id
+    u_task.from_version = cluster.version
+    u_task.to_version = to_version
+    u_task.upgrade_start_time = datetime.datetime.now()
+    db_session.add(u_task)
     db_session.commit()
     # TODO(sc68cal) RPC or calls to task broker to start upgrade
     return {'id': cluster_id, 'status': constants.UPGRADE_IN_PROGRESS}
@@ -51,7 +65,9 @@ def create_cluster_upgrade(cluster_id, to_version):
 
 def cancel_cluster_upgrade(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
-    cluster.status = constants.UPGRADE_CANCELLED
+    u_task = _get_most_recent_upgrade_task(cluster_id)
+    u_task.upgrade_end_time = datetime.datetime.now()
+    u_task.status = cluster.status = constants.UPGRADE_CANCELLED
     db_session.commit()
     # TODO(sc68cal) RPC or calls to task broker to cancel
     return {'id': cluster_id, 'status': constants.UPGRADE_CANCELLED}
@@ -59,7 +75,8 @@ def cancel_cluster_upgrade(cluster_id):
 
 def continue_cluster_upgrade(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
-    cluster.status = constants.UPGRADE_IN_PROGRESS
+    u_task = _get_most_recent_upgrade_task(cluster_id)
+    u_task.status = cluster.status = constants.UPGRADE_IN_PROGRESS
     db_session.commit()
     # TODO(sc68cal) RPC or calls to task broker to continue
     return {'id': cluster_id, 'status': constants.UPGRADE_IN_PROGRESS}
@@ -67,7 +84,8 @@ def continue_cluster_upgrade(cluster_id):
 
 def pause_cluster_upgrade(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
-    cluster.status = constants.UPGRADE_PAUSED
+    u_task = _get_most_recent_upgrade_task(cluster_id)
+    u_task.status = cluster.status = constants.UPGRADE_PAUSED
     db_session.commit()
     # TODO(sc68cal) RPC or calls to task broker to pause
     return {'id': cluster_id, 'status': constants.UPGRADE_PAUSED}
@@ -75,7 +93,8 @@ def pause_cluster_upgrade(cluster_id):
 
 def rollback_cluster_upgrade(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
-    cluster.status = constants.UPGRADE_ROLLBACK
+    u_task = _get_most_recent_upgrade_task(cluster_id)
+    u_task.status = cluster.status = constants.UPGRADE_ROLLBACK
     db_session.commit()
     # TODO(sc68cal) RPC or calls to task broker to start rollback
     return {'id': cluster_id, 'status': constants.UPGRADE_ROLLBACK}
@@ -89,12 +108,12 @@ def get_clusters():
 
 def create_host(name, cluster_id):
     new_host = models.Host()
-    new_host.name = name
+    new_host.hostname = name
     new_host.cluster_id = cluster_id
     db_session.add(new_host)
     db_session.commit()
     return {'id': new_host.id,
-            'name': new_host.name,
+            'hostname': new_host.hostname,
             'cluster_id': new_host.cluster_id}
 
 

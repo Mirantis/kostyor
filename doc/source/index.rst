@@ -10,3 +10,4 @@ laid out in the `OPNFV Escalator project <https://wiki.opnfv.org/display/escalat
     cli.rst
     rest_api.rst
     ansible_driver.rst
+    decision_engine.rst

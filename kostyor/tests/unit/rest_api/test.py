@@ -23,19 +23,19 @@ class KostyorRestAPITest(unittest.TestCase):
             'auth_url': 'http://9.9.9.9',
         }
 
-    @mock.patch('kostyor.db.api.get_cluster_status')
-    def test_get_cluster_status(self, fake_db_get_cluster_status):
+    @mock.patch('kostyor.db.api.get_cluster')
+    def test_get_cluster_status(self, fake_db_get_cluster):
         expected = {'status': 'done', 'name': 'tmp', 'id': '123'}
-        fake_db_get_cluster_status.return_value = expected
-        res = self.app.get('/cluster-status/{}'.format(self.cluster_id))
+        fake_db_get_cluster.return_value = expected
+        res = self.app.get('/clusters/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)
         data = res.data.decode('utf-8')
         received = json.loads(data)
         self.assertEqual(expected, received)
 
-    @mock.patch('kostyor.db.api.get_cluster_status')
-    def test_get_cluster_status_404(self, fake_db_get_cluster_status):
-        fake_db_get_cluster_status.return_value = None
+    @mock.patch('kostyor.db.api.get_cluster')
+    def test_get_cluster_status_404(self, fake_db_get_cluster):
+        fake_db_get_cluster.return_value = None
         res = self.app.get('/cluster-status/{}'.format(self.cluster_id))
         self.assertEqual(404, res.status_code)
 
@@ -70,9 +70,9 @@ class KostyorRestAPITest(unittest.TestCase):
         self.assertEqual(200, res.status_code)
         self.assertEqual(expected, received)
 
-    @mock.patch('kostyor.db.api.get_cluster_status')
-    def test_get_upgrade_versions(self, fake_db_get_cluster_status):
-        fake_db_get_cluster_status.return_value = {'version': 'liberty'}
+    @mock.patch('kostyor.db.api.get_cluster')
+    def test_get_upgrade_versions(self, fake_db_get_cluster):
+        fake_db_get_cluster.return_value = {'version': 'liberty'}
         res = self.app.get('/upgrade-versions/{}'.format(self.cluster_id))
         data = res.data.decode('utf-8')
         received = json.loads(data)
@@ -97,29 +97,29 @@ class KostyorRestAPITest(unittest.TestCase):
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    @mock.patch('kostyor.db.api.get_cluster_status')
+    @mock.patch('kostyor.db.api.get_cluster')
     def test_create_cluster_upgrade_404(self,
-                                        fake_get_cluster_status,
+                                        fake_get_cluster,
                                         fake_db_create_cluster_upgrade):
         fake_db_create_cluster_upgrade.return_value = None
-        fake_get_cluster_status.return_value = {'version': 'liberty', 'status':
-                                                constants.READY_FOR_UPGRADE}
+        fake_get_cluster.return_value = {'version': 'liberty', 'status':
+                                         constants.READY_FOR_UPGRADE}
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'mitaka'})
         self.assertEqual(404, res.status_code)
 
-    @mock.patch('kostyor.db.api.get_cluster_status')
+    @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_create_cluster_upgrade(self,
                                     fake_db_create_cluster_upgrade,
-                                    fake_get_cluster_status):
+                                    fake_get_cluster):
         expected = {'id': self.cluster_id, 'status': 'upgrading'}
 
         fake_db_create_cluster_upgrade.return_value = expected
-        fake_get_cluster_status.return_value = {'id': self.cluster_id, 'name':
-                                                'test cluster', 'version':
-                                                'liberty', 'status':
-                                                constants.READY_FOR_UPGRADE}
+        fake_get_cluster.return_value = {'id': self.cluster_id,
+                                         'name': 'test cluster',
+                                         'version': constants.LIBERTY,
+                                         'status': constants.READY_FOR_UPGRADE}
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'newton'})
         data = res.data.decode('utf-8')

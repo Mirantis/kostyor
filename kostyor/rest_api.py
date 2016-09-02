@@ -32,9 +32,9 @@ def generate_response(status, message):
     return resp
 
 
-@app.route('/cluster-status/<cluster_id>')
+@app.route('/clusters/<cluster_id>')
 def get_cluster_status(cluster_id):
-    cluster = db_api.get_cluster_status(cluster_id)
+    cluster = db_api.get_cluster(cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -69,7 +69,7 @@ def get_discovery_methods():
 
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
-    cluster = db_api.get_cluster_status(cluster_id)
+    cluster = db_api.get_cluster(cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -160,7 +160,7 @@ def create_cluster_upgrade(cluster_id):
         return resp
 
     try:
-        cluster = db_api.get_cluster_status(cluster_id)
+        cluster = db_api.get_cluster(cluster_id)
     except Exception as ex:
         return generate_response(404, ex.message)
     if cluster['version'] == constants.UNKNOWN:

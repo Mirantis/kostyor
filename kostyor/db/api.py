@@ -22,7 +22,7 @@ def _get_most_recent_upgrade_task(cluster_id):
     return q.first()
 
 
-def get_cluster_status(cluster_id):
+def get_cluster(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
     if not cluster:
         raise Exception("Cluster with ID: %s not found" % cluster_id)

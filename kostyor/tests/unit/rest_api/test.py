@@ -34,9 +34,9 @@ class KostyorRestAPITest(unittest.TestCase):
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.get_cluster')
-    def test_get_cluster_status_404(self, fake_db_get_cluster):
+    def test_get_cluster_404(self, fake_db_get_cluster):
         fake_db_get_cluster.return_value = None
-        res = self.app.get('/cluster-status/{}'.format(self.cluster_id))
+        res = self.app.get('/clusters/{}'.format(self.cluster_id))
         self.assertEqual(404, res.status_code)
 
     @mock.patch('kostyor.db.api.get_upgrade_status')

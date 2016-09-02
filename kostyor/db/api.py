@@ -1,4 +1,5 @@
 import datetime
+import six
 
 from kostyor.common import constants
 from kostyor.db import models
@@ -139,3 +140,10 @@ def create_cluster(name, version, status):
             'name': cluster.name,
             'version': cluster.version,
             'status': cluster.status}
+
+
+def update_cluster(cluster_id, **kwargs):
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    for arg, val in six.iteritems(kwargs):
+        setattr(cluster, arg, val)
+    db_session.commit()

@@ -43,6 +43,12 @@ def get_cluster_status(cluster_id):
     return resp
 
 
+@app.route('/clusters/<cluster_id>', methods=['PUT'])
+def update_cluster(cluster_id):
+    db_api.update_cluster(cluster_id, **request.form)
+    return generate_response(200, 'Cluster %s updated' % cluster_id)
+
+
 @app.route('/upgrade-status/<cluster_id>')
 def get_upgrade_status(cluster_id):
     upgrade = db_api.get_upgrade_status(cluster_id)

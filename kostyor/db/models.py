@@ -31,6 +31,10 @@ class Cluster(Base, HasId):
         self.version = version
         self.status = status
 
+    def to_dict(self):
+        return {'id': self.id, 'name': self.name, 'version':
+                self.version, 'status': self.status}
+
 
 class Host(Base, HasId):
     __tablename__ = 'hosts'
@@ -55,6 +59,16 @@ class UpgradeTask(Base, HasId):
     upgrade_start_time = sa.Column(sa.DateTime)
     upgrade_end_time = sa.Column(sa.DateTime)
     status = sa.Column(sa.Enum(*constants.STATUSES))
+
+    def to_dict(self):
+        return {'id': self.id,
+                'cluster_id': self.cluster_id,
+                'from_version': self.from_version,
+                'to_version': self.to_version,
+                'upgrade_start_time': self.upgrade_start,
+                'upgrade_end_time': self.upgrade_end_time,
+                'status': self.status
+                }
 
 
 class ServiceUpgradeRecord(Base, HasId):

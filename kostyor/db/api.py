@@ -27,10 +27,7 @@ def get_cluster(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
     if not cluster:
         raise Exception("Cluster with ID: %s not found" % cluster_id)
-    return {'id': cluster.id,
-            'name': cluster.name,
-            'version': cluster.version,
-            'status': cluster.status}
+    return cluster.to_dict()
 
 
 def get_upgrade_status(cluster_id):

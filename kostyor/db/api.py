@@ -30,8 +30,13 @@ def get_cluster(cluster_id):
     return cluster.to_dict()
 
 
-def get_upgrade_status(cluster_id):
+def get_upgrade_by_cluster(cluster_id):
     u_task = _get_most_recent_upgrade_task(cluster_id)
+    return u_task.to_dict()
+
+
+def get_upgrade(upgrade_id):
+    u_task = db_session.query(models.UpgradeTask).get(upgrade_id)
     return u_task.to_dict()
 
 

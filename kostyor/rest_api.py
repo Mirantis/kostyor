@@ -57,11 +57,22 @@ def update_cluster(cluster_id):
 
 @app.route('/upgrade-status/<cluster_id>')
 def get_upgrade_status(cluster_id):
-    upgrade = db_api.get_upgrade_status(cluster_id)
+    upgrade = db_api.get_upgrade_by_cluster(cluster_id)
+    if upgrade:
+        full_url = url_for('.get_upgrade', upgrade_id=upgrade['id'])
+        return redirect(full_url)
+    else:
+        return generate_response(404, 'Upgrade for cluster %s not found' %
+                                 cluster_id)
+
+
+@app.route('/upgrades/<upgrade_id>')
+def get_upgrade(upgrade_id):
+    upgrade = db_api.get_upgrade(upgrade_id)
     if not upgrade:
         resp = generate_response(
             404,
-            'Upgrade for cluster %s not found' % cluster_id
+            'Upgrade %s not found' % upgrade_id
         )
         return resp
 

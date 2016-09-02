@@ -2,9 +2,7 @@ import copy
 
 from collections import defaultdict
 
-from flask import Flask
-from flask import jsonify
-from flask import request
+from flask import Flask, jsonify, redirect, request, url_for
 from keystoneauth1 import exceptions
 from keystoneauth1 import session
 from keystoneauth1.identity import v2
@@ -33,7 +31,7 @@ def generate_response(status, message):
 
 
 @app.route('/clusters/<cluster_id>')
-def get_cluster_status(cluster_id):
+def get_cluster(cluster_id):
     cluster = db_api.get_cluster(cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
@@ -41,6 +39,14 @@ def get_cluster_status(cluster_id):
 
     resp = jsonify(cluster)
     return resp
+
+
+# TODO remove after merge of
+# https://github.com/sc68cal/Kostyor-cli/commit/6ba1d1901162ab8240c798e6427865d2da229160
+@app.route('/cluster-status/<cluster_id>')
+def get_cluster_status(cluster_id):
+    full_url = url_for('.get_cluster', cluster_id=cluster_id)
+    return redirect(full_url)
 
 
 @app.route('/clusters/<cluster_id>', methods=['PUT'])

@@ -1,4 +1,5 @@
 import datetime
+import six
 
 from kostyor.common import constants
 from kostyor.db import models
@@ -22,18 +23,20 @@ def _get_most_recent_upgrade_task(cluster_id):
     return q.first()
 
 
-def get_cluster_status(cluster_id):
+def get_cluster(cluster_id):
     cluster = db_session.query(models.Cluster).get(cluster_id)
     if not cluster:
         raise Exception("Cluster with ID: %s not found" % cluster_id)
-    return {'id': cluster.id,
-            'name': cluster.name,
-            'version': cluster.version,
-            'status': cluster.status}
+    return cluster.to_dict()
 
 
-def get_upgrade_status(cluster_id):
+def get_upgrade_by_cluster(cluster_id):
     u_task = _get_most_recent_upgrade_task(cluster_id)
+    return u_task.to_dict()
+
+
+def get_upgrade(upgrade_id):
+    u_task = db_session.query(models.UpgradeTask).get(upgrade_id)
     return u_task.to_dict()
 
 
@@ -139,3 +142,10 @@ def create_cluster(name, version, status):
             'name': cluster.name,
             'version': cluster.version,
             'status': cluster.status}
+
+
+def update_cluster(cluster_id, **kwargs):
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+    for arg, val in six.iteritems(kwargs):
+        setattr(cluster, arg, val)
+    db_session.commit()

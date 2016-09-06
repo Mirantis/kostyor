@@ -58,3 +58,15 @@ class DbApiTestCase(base.BaseTestCase):
         expected = db_api.get_clusters()
 
         self.assertEqual(len(expected['clusters']), 10)
+
+    def test_update_cluster(self):
+        cluster = db_api.create_cluster("test", constants.MITAKA,
+                                        constants.READY_FOR_UPGRADE)
+
+        update = {"name": "foo!"}
+
+        db_api.update_cluster(cluster['id'], **update)
+
+        result = db_api.get_cluster(cluster['id'])
+
+        self.assertEqual(update['name'], result['name'])

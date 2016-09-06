@@ -2,9 +2,7 @@ import copy
 
 from collections import defaultdict
 
-from flask import Flask
-from flask import jsonify
-from flask import request
+from flask import Flask, jsonify, redirect, request, url_for
 from keystoneauth1 import exceptions
 from keystoneauth1 import session
 from keystoneauth1.identity import v2
@@ -32,9 +30,9 @@ def generate_response(status, message):
     return resp
 
 
-@app.route('/cluster-status/<cluster_id>')
-def get_cluster_status(cluster_id):
-    cluster = db_api.get_cluster_status(cluster_id)
+@app.route('/clusters/<cluster_id>')
+def get_cluster(cluster_id):
+    cluster = db_api.get_cluster(cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -43,13 +41,38 @@ def get_cluster_status(cluster_id):
     return resp
 
 
+# TODO remove after merge of
+# https://github.com/sc68cal/Kostyor-cli/commit/6ba1d1901162ab8240c798e6427865d2da229160
+@app.route('/cluster-status/<cluster_id>')
+def get_cluster_status(cluster_id):
+    full_url = url_for('.get_cluster', cluster_id=cluster_id)
+    return redirect(full_url)
+
+
+@app.route('/clusters/<cluster_id>', methods=['PUT'])
+def update_cluster(cluster_id):
+    db_api.update_cluster(cluster_id, **request.form)
+    return generate_response(200, 'Cluster %s updated' % cluster_id)
+
+
 @app.route('/upgrade-status/<cluster_id>')
 def get_upgrade_status(cluster_id):
-    upgrade = db_api.get_upgrade_status(cluster_id)
+    upgrade = db_api.get_upgrade_by_cluster(cluster_id)
+    if upgrade:
+        full_url = url_for('.get_upgrade', upgrade_id=upgrade['id'])
+        return redirect(full_url)
+    else:
+        return generate_response(404, 'Upgrade for cluster %s not found' %
+                                 cluster_id)
+
+
+@app.route('/upgrades/<upgrade_id>')
+def get_upgrade(upgrade_id):
+    upgrade = db_api.get_upgrade(upgrade_id)
     if not upgrade:
         resp = generate_response(
             404,
-            'Upgrade for cluster %s not found' % cluster_id
+            'Upgrade %s not found' % upgrade_id
         )
         return resp
 
@@ -69,7 +92,7 @@ def get_discovery_methods():
 
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
-    cluster = db_api.get_cluster_status(cluster_id)
+    cluster = db_api.get_cluster(cluster_id)
     if not cluster:
         resp = generate_response(404, 'Cluster %s not found' % cluster_id)
         return resp
@@ -160,7 +183,7 @@ def create_cluster_upgrade(cluster_id):
         return resp
 
     try:
-        cluster = db_api.get_cluster_status(cluster_id)
+        cluster = db_api.get_cluster(cluster_id)
     except Exception as ex:
         return generate_response(404, ex.message)
     if cluster['version'] == constants.UNKNOWN:

@@ -41,14 +41,6 @@ def get_cluster(cluster_id):
     return resp
 
 
-# TODO remove after merge of
-# https://github.com/sc68cal/Kostyor-cli/commit/6ba1d1901162ab8240c798e6427865d2da229160
-@app.route('/cluster-status/<cluster_id>')
-def get_cluster_status(cluster_id):
-    full_url = url_for('.get_cluster', cluster_id=cluster_id)
-    return redirect(full_url)
-
-
 @app.route('/clusters/<cluster_id>', methods=['PUT'])
 def update_cluster(cluster_id):
     db_api.update_cluster(cluster_id, **request.form)

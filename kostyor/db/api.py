@@ -40,8 +40,8 @@ def get_upgrade(upgrade_id):
     return u_task.to_dict()
 
 
-def get_discovery_methods(db_session):
-    return {'discovery_methods': constants.DISCOVERY_METHODS}
+def get_discovery_methods():
+    return constants.DISCOVERY_METHODS
 
 
 def get_upgrade_versions(cluster_id):

@@ -1,0 +1,201 @@
+swagger: "2.0"
+info:
+  title: Kostyor API
+  description: Aims & Launches Grenades
+  version: 1.0.0
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /clusters:
+    get:
+      summary: List OpenStack Environments
+      responses:
+        200:
+          description: An array of OpenStack environments.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Cluster'
+  /clusters/{id}:
+    get:
+      summary: Show OpenStack Environment
+      parameters:
+        - name: id
+          type: string
+          pattern: &UUID_PATTERN |
+            ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific OpenStack environment.
+      responses:
+        200:
+          description: An OpenStack environment.
+          schema:
+            $ref: '#/definitions/Cluster'
+        404:
+          description: OpenStack environment not found.
+          schema:
+            $ref: '#/definitions/Error'
+  /clusters/{id}/upgrades:
+    get:
+      summary: List Upgrade Tasks of OpenStack Environments
+      parameters:
+        - name: id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific OpenStack environment.
+      responses:
+        200:
+          description: An arrays of upgrade tasks.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Upgrade'
+        404:
+          description: OpenStack environment not found.
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Start Upgrade of OpenStack Environment
+      parameters:
+        - name: id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific OpenStack environment.
+      responses:
+        202:
+          description: A task instance to track the progress.
+          schema:
+            $ref: '#/definitions/Upgrade'
+        400:
+          description: OpenStack environment is not ready for upgrade.
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: OpenStack environment not found.
+          schema:
+            $ref: '#/definitions/Error'
+  /clusters/{id}/upgrades/{upgrade_id}:
+    get:
+      summary: Show Upgrade Task
+      parameters:
+        - name: id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific task.
+      responses:
+        200:
+          description: A task.
+          schema:
+            $ref: '#/definitions/Upgrade'
+        404:
+          description: Task not found.
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      summary: Control Upgrade Flow of OpenStack Environment
+      parameters:
+        - name: id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific OpenStack environment.
+        - name: upgrade_id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific upgrade task.
+      responses:
+        200:
+          description: A task instance to track the progress.
+          schema:
+            $ref: '#/definitions/Upgrade'
+        400:
+          description: OpenStack environment is not ready for upgrade.
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Either OpenStack environment or upgrade task not found.
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+  Cluster:
+    type: object
+    required:
+      - id
+      - name
+      - version
+      - status
+    properties:
+      id:
+        type: string
+        pattern: *UUID_PATTERN
+      name:
+        type: string
+      version:
+        type: string
+        enum: &OPENSTACK_VERSIONS
+          - Unknown
+          - Liberty
+          - Mitaka
+          - Newton
+      status:
+        type: string
+        enum: &ENVIRONMENT_STATUSES
+          - READY_FOR_UPGRADE
+          - UPGRADE_IN_PROGRESS
+          - UPGRADE_PAUSED
+          - UPGRADE_ERROR
+          - UPGRADE_CANCELLED
+          - NOT_READY_FOR_UPGRADE
+          - ROLLBACK_IN_PROGRESS
+  Error:
+    type: object
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: string
+        pattern: ^\w+$
+      message:
+        type: string
+  Upgrade:
+    type: object
+    required:
+      - id
+      - status
+      - cluster_id
+    properties:
+      id:
+        type: string
+        pattern: *UUID_PATTERN
+      status:
+        type: string
+        enum:
+          - pending
+          - running
+          - ready
+          - error
+      cluster_id:
+        type: string
+        description: |
+          A unique identifier representing assigned OpenStack environment.

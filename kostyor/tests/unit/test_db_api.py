@@ -70,3 +70,8 @@ class DbApiTestCase(base.BaseTestCase):
         result = db_api.get_cluster(cluster['id'])
 
         self.assertEqual(update['name'], result['name'])
+
+    def test_discovery_methods(self):
+        methods = db_api.get_discovery_methods()
+        # we don't care about ordering here, so let's compare sorted arrays
+        self.assertEqual(sorted(methods), sorted([constants.OPENSTACK]))

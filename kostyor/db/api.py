@@ -4,8 +4,6 @@ import six
 from kostyor.common import constants
 from kostyor.db import models
 
-from six.moves import map
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -104,9 +102,8 @@ def rollback_cluster_upgrade(cluster_id):
 
 
 def get_clusters():
-    return {'clusters': list(map(lambda x: {'id': x.id, 'name': x.name,
-                                            'status': x.status},
-                                 db_session.query(models.Cluster).all()))}
+    # TODO(ikalnitsky): implement pagination in params
+    return [cluster.to_dict() for cluster in db_session.query(models.Cluster)]
 
 
 def create_host(name, cluster_id):

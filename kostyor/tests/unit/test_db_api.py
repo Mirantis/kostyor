@@ -42,10 +42,9 @@ class DbApiTestCase(base.BaseTestCase):
     def test_create_cluster(self):
         result = db_api.get_clusters()
 
-        self.assertIn("clusters", result)
-        self.assertGreater(len(result['clusters']), 0)
+        self.assertGreater(len(result), 0)
 
-        result_data = result['clusters'][0]
+        result_data = result[0]
 
         self.assertIsNotNone(result_data['id'])
 
@@ -55,7 +54,7 @@ class DbApiTestCase(base.BaseTestCase):
             db_api.create_cluster("test" + str(i), constants.MITAKA,
                                   constants.READY_FOR_UPGRADE)
 
-        expected = db_api.get_clusters()['clusters']
+        expected = db_api.get_clusters()
 
         cluster_names = [cluster['name'] for cluster in expected]
         for i in range(0, 10):

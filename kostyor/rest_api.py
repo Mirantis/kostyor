@@ -3,6 +3,7 @@ import copy
 from collections import defaultdict
 
 from flask import Flask, jsonify, redirect, request, url_for
+from flask_restful import Api
 from keystoneauth1 import exceptions
 from keystoneauth1 import session
 from keystoneauth1.identity import v2
@@ -11,11 +12,26 @@ import six
 from kostyor.common import constants
 from kostyor.inventory import discover
 from kostyor.inventory import upgrades
+from kostyor import resources
 
 from kostyor.db import api as db_api
 from kostyor.db.api import db_session
 
 app = Flask(__name__)
+api = Api(app)
+
+
+# Flask-RESTful extends each 404 respond with custom message about close
+# endpoints. It works pretty awful and unexpected when you explicitly
+# specifies error message. Let's turn off it so any error message become
+# predicted.
+app.config['ERROR_404_HELP'] = False
+
+# New API endpoints should be implemented via Flask-RESTful and added here.
+# Once old ones are reimplemented - we can get rid of them and even provide
+# some factory function to return Flask application.
+api.add_resource(resources.Clusters, '/clusters')
+api.add_resource(resources.Cluster, '/clusters/<cluster_id>')
 
 
 @app.teardown_appcontext
@@ -28,23 +44,6 @@ def generate_response(status, message):
     resp = jsonify(message)
     resp.status_code = status
     return resp
-
-
-@app.route('/clusters/<cluster_id>')
-def get_cluster(cluster_id):
-    cluster = db_api.get_cluster(cluster_id)
-    if not cluster:
-        resp = generate_response(404, 'Cluster %s not found' % cluster_id)
-        return resp
-
-    resp = jsonify(cluster)
-    return resp
-
-
-@app.route('/clusters/<cluster_id>', methods=['PUT'])
-def update_cluster(cluster_id):
-    db_api.update_cluster(cluster_id, **request.form)
-    return generate_response(200, 'Cluster %s updated' % cluster_id)
 
 
 @app.route('/upgrade-status/<cluster_id>')
@@ -299,12 +298,6 @@ def rollback_cluster_upgrade(cluster_id):
 
     resp = jsonify(upgrade)
     return resp
-
-
-@app.route('/clusters', methods=['GET'])
-def cluster_list():
-    clusters = db_api.get_clusters()
-    return jsonify(clusters)
 
 
 @app.route('/clusters/<cluster_id>/services')

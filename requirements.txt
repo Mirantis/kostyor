@@ -7,6 +7,7 @@ python-neutronclient
 pbr
 pytz
 flask
+flask_restful
 six
 oslo.utils
 sqlalchemy

@@ -29,22 +29,6 @@ class KostyorRestAPITest(unittest.TestCase):
             'cluster_id': '1234'
         }
 
-    @mock.patch('kostyor.db.api.get_cluster')
-    def test_get_cluster_status(self, fake_db_get_cluster):
-        expected = {'status': 'done', 'name': 'tmp', 'id': '123'}
-        fake_db_get_cluster.return_value = expected
-        res = self.app.get('/clusters/{}'.format(self.cluster_id))
-        self.assertEqual(200, res.status_code)
-        data = res.data.decode('utf-8')
-        received = json.loads(data)
-        self.assertEqual(expected, received)
-
-    @mock.patch('kostyor.db.api.get_cluster')
-    def test_get_cluster_404(self, fake_db_get_cluster):
-        fake_db_get_cluster.return_value = None
-        res = self.app.get('/clusters/{}'.format(self.cluster_id))
-        self.assertEqual(404, res.status_code)
-
     @mock.patch('kostyor.db.api.get_upgrade')
     def test_get_upgrade_status(self, fake_db_get_upgrade):
         expected = {'status': 'status',

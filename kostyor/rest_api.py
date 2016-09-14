@@ -301,11 +301,6 @@ def rollback_cluster_upgrade(cluster_id):
     return resp
 
 
-@app.route('/cluster-list', methods=['GET'])
-def cluster_list_deprecated():
-    return redirect(url_for('.cluster_list'))
-
-
 @app.route('/clusters', methods=['GET'])
 def cluster_list():
     clusters = db_api.get_clusters()

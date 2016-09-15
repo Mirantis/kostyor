@@ -120,6 +120,12 @@ def create_host(name, cluster_id):
             'cluster_id': new_host.cluster_id}
 
 
+def get_hosts_by_cluster(cluster_id):
+    hosts = db_session.query(models.Host).filter_by(
+        cluster_id=cluster_id)
+    return [host.to_dict() for host in hosts]
+
+
 def create_service(name, host_id, version):
     new_service = models.Service()
     new_service.name = name
@@ -131,6 +137,12 @@ def create_service(name, host_id, version):
             'name': new_service.name,
             'host_id': new_service.host_id,
             'version': new_service.version}
+
+
+def get_services_by_host(host_id):
+    services = db_session.query(models.Service).filter_by(
+        host_id=host_id)
+    return [service.to_dict() for service in services]
 
 
 def create_cluster(name, version, status):

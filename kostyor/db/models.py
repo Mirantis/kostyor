@@ -10,14 +10,24 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class HasId(object):
-    """id mixin, add to subclasses that have an id."""
+class KostyorModelMixin(object):
+    """ID and 'to_dict' mixin.
+
+       Add to subclasses that have an id and 'to_dict' method.
+
+    """
     id = sa.Column(sa.String(36),
                    primary_key=True,
                    default=uuidutils.generate_uuid)
 
+    def to_dict(self):
+        model_dict = {}
+        for column in self.__table__.columns:
+            model_dict[column.name] = getattr(self, column.name)
+        return model_dict
 
-class Cluster(Base, HasId):
+
+class Cluster(Base, KostyorModelMixin):
     __tablename__ = 'clusters'
 
     name = sa.Column(sa.String(255))
@@ -31,19 +41,15 @@ class Cluster(Base, HasId):
         self.version = version
         self.status = status
 
-    def to_dict(self):
-        return {'id': self.id, 'name': self.name, 'version':
-                self.version, 'status': self.status}
 
-
-class Host(Base, HasId):
+class Host(Base, KostyorModelMixin):
     __tablename__ = 'hosts'
 
     hostname = sa.Column(sa.String(255))
     cluster_id = sa.Column(sa.ForeignKey('clusters.id'))
 
 
-class Service(Base, HasId):
+class Service(Base, KostyorModelMixin):
     __tablename__ = 'services'
 
     name = sa.Column(sa.String(255))
@@ -51,8 +57,9 @@ class Service(Base, HasId):
     version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
 
 
-class UpgradeTask(Base, HasId):
+class UpgradeTask(Base, KostyorModelMixin):
     __tablename__ = 'upgrade_tasks'
+
     cluster_id = sa.Column(sa.ForeignKey('clusters.id'))
     from_version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
     to_version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
@@ -60,18 +67,8 @@ class UpgradeTask(Base, HasId):
     upgrade_end_time = sa.Column(sa.DateTime)
     status = sa.Column(sa.Enum(*constants.STATUSES))
 
-    def to_dict(self):
-        return {'id': self.id,
-                'cluster_id': self.cluster_id,
-                'from_version': self.from_version,
-                'to_version': self.to_version,
-                'upgrade_start_time': self.upgrade_start,
-                'upgrade_end_time': self.upgrade_end_time,
-                'status': self.status
-                }
 
-
-class ServiceUpgradeRecord(Base, HasId):
+class ServiceUpgradeRecord(Base, KostyorModelMixin):
     __tablename__ = 'service_upgrade_records'
 
     service_id = sa.Column(sa.ForeignKey('services.id'))

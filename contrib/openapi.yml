@@ -153,10 +153,10 @@ definitions:
       version:
         type: string
         enum: &OPENSTACK_VERSIONS
-          - Unknown
-          - Liberty
-          - Mitaka
-          - Newton
+          - unknown
+          - liberty
+          - mitaka
+          - newton
       status:
         type: string
         enum: &ENVIRONMENT_STATUSES

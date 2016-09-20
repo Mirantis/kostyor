@@ -63,6 +63,10 @@ Here is an example of terminating:
     p.join()
 
 
+In case when we have multiple servers flow will be the following.
+Ansible iterates by tasks and for each task iterates by servers.
+That means when we interrupt playbook we will have servers in almost the same conditions.
+
 Resume interrupted playbook
 =============================
 
@@ -146,3 +150,18 @@ Conclusion
 
 Taking into account ansible task idenpotency we can run whole playbook from the beginning after interrupting it in the middle.
 In this way resume interrupted playbook is meaningless.
+
+OpenStack ansible upgrade
+=========================
+
+For running upgrade you must execute `scripts/run-upgrade.sh`.
+
+This script consists of two parts:
+
+* run `scripts/bootstrap-ansible.sh` for install required tools, packages, etc.
+* run sequence of 20 ansible playbooks
+
+Each playbook runs independently, they don't have shared namespace with variables.
+
+That means that we can split whole upgrade at least on 20 pieces.
+Also if the piece was done successfully we don't need to repeat it when try to resume upgrade.

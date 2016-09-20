@@ -60,3 +60,95 @@ class TestClustersEndpoint(oslotest.base.BaseTestCase):
 
         received = json.loads(resp.get_data(as_text=True))
         self.assertEqual({'message': 'Cluster 123 not found.'}, received)
+
+    @mock.patch('kostyor.db.api.update_cluster')
+    def test_put_cluster(self, fake_update_cluster):
+        expected = {'id': '1feef932-e694-48e3-adc9-b85b13a1aa7b',
+                    'name': 'test',
+                    'status': constants.READY_FOR_UPGRADE,
+                    'version': constants.MITAKA}
+        fake_update_cluster.return_value = expected
+
+        resp = self.app.put(
+            '/clusters/1feef932-e694-48e3-adc9-b85b13a1aa7b',
+            content_type='application/json',
+            data=json.dumps({
+                'name': 'test',
+                'status': constants.READY_FOR_UPGRADE,
+                'version': constants.MITAKA,
+            })
+        )
+        self.assertEqual(200, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        self.assertEqual(expected, received)
+
+    @mock.patch('kostyor.db.api.update_cluster')
+    def test_put_cluster_wrong_id(self, fake_update_cluster):
+        resp = self.app.put(
+            '/clusters/1feef932-e694-48e3-adc9-b85b13a1aa7b',
+            content_type='application/json',
+            data=json.dumps({
+                'id': 'new-id',
+                'name': 'test',
+                'status': constants.READY_FOR_UPGRADE,
+                'version': constants.MITAKA,
+            })
+        )
+        self.assertEqual(400, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        error = {
+            'message': 'Cannot update a cluster '
+                       '"1feef932-e694-48e3-adc9-b85b13a1aa7b", passed data '
+                       'are incorrect. See "errors" attribute for details.',
+            'errors': {'id': ['field is read-only']}
+        }
+        self.assertEqual(error, received)
+        self.assertFalse(fake_update_cluster.called)
+
+    @mock.patch('kostyor.db.api.update_cluster')
+    def test_put_cluster_wrong_status(self, fake_update_cluster):
+        resp = self.app.put(
+            '/clusters/1feef932-e694-48e3-adc9-b85b13a1aa7b',
+            content_type='application/json',
+            data=json.dumps({
+                'name': 'test',
+                'status': 'INCORRECT STATUS',
+                'version': constants.MITAKA,
+            })
+        )
+        self.assertEqual(400, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        error = {
+            'message': 'Cannot update a cluster '
+                       '"1feef932-e694-48e3-adc9-b85b13a1aa7b", passed data '
+                       'are incorrect. See "errors" attribute for details.',
+            'errors': {'status': ['unallowed value INCORRECT STATUS']}
+        }
+        self.assertEqual(error, received)
+        self.assertFalse(fake_update_cluster.called)
+
+    @mock.patch('kostyor.db.api.update_cluster')
+    def test_put_cluster_wrong_version(self, fake_update_cluster):
+        resp = self.app.put(
+            '/clusters/1feef932-e694-48e3-adc9-b85b13a1aa7b',
+            content_type='application/json',
+            data=json.dumps({
+                'name': 'test',
+                'status': constants.READY_FOR_UPGRADE,
+                'version': 'INCORRECT VERSION',
+            })
+        )
+        self.assertEqual(400, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        error = {
+            'message': 'Cannot update a cluster '
+                       '"1feef932-e694-48e3-adc9-b85b13a1aa7b", passed data '
+                       'are incorrect. See "errors" attribute for details.',
+            'errors': {'version': ['unallowed value INCORRECT VERSION']}
+        }
+        self.assertEqual(error, received)
+        self.assertFalse(fake_update_cluster.called)

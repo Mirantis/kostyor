@@ -12,17 +12,17 @@ produces:
 paths:
   /clusters:
     get:
-      summary: List OpenStack Environments
+      summary: List Clusters
       responses:
         200:
-          description: An array of OpenStack environments.
+          description: An array of clusters.
           schema:
             type: array
             items:
               $ref: '#/definitions/Cluster'
   /clusters/{id}:
     get:
-      summary: Show OpenStack Environment
+      summary: Show Cluster
       parameters:
         - name: id
           type: string
@@ -31,19 +31,19 @@ paths:
           required: true
           in: path
           description: |
-            Unique identifier representing the specific OpenStack environment.
+            Unique identifier representing the specific cluster.
       responses:
         200:
-          description: An OpenStack environment.
+          description: A cluster.
           schema:
             $ref: '#/definitions/Cluster'
         404:
-          description: OpenStack environment not found.
+          description: Cluster not found.
           schema:
             $ref: '#/definitions/Error'
   /clusters/{id}/upgrades:
     get:
-      summary: List Upgrade Tasks of OpenStack Environments
+      summary: List Upgrade Tasks of Clusters
       parameters:
         - name: id
           type: string
@@ -51,7 +51,7 @@ paths:
           required: true
           in: path
           description: |
-            Unique identifier representing the specific OpenStack environment.
+            Unique identifier representing the specific cluster.
       responses:
         200:
           description: An arrays of upgrade tasks.
@@ -60,11 +60,11 @@ paths:
             items:
               $ref: '#/definitions/Upgrade'
         404:
-          description: OpenStack environment not found.
+          description: Cluster not found.
           schema:
             $ref: '#/definitions/Error'
     post:
-      summary: Start Upgrade of OpenStack Environment
+      summary: Start Cluster Upgrade
       parameters:
         - name: id
           type: string
@@ -72,18 +72,18 @@ paths:
           required: true
           in: path
           description: |
-            Unique identifier representing the specific OpenStack environment.
+            Unique identifier representing the specific cluster.
       responses:
         202:
           description: A task instance to track the progress.
           schema:
             $ref: '#/definitions/Upgrade'
         400:
-          description: OpenStack environment is not ready for upgrade.
+          description: Cluster is not ready for upgrade.
           schema:
             $ref: '#/definitions/Error'
         404:
-          description: OpenStack environment not found.
+          description: Cluster not found.
           schema:
             $ref: '#/definitions/Error'
   /clusters/{id}/upgrades/{upgrade_id}:
@@ -107,7 +107,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
     put:
-      summary: Control Upgrade Flow of OpenStack Environment
+      summary: Control Upgrade Flow of a Cluster
       parameters:
         - name: id
           type: string
@@ -115,7 +115,7 @@ paths:
           required: true
           in: path
           description: |
-            Unique identifier representing the specific OpenStack environment.
+            Unique identifier representing the specific cluster.
         - name: upgrade_id
           type: string
           pattern: *UUID_PATTERN
@@ -129,11 +129,11 @@ paths:
           schema:
             $ref: '#/definitions/Upgrade'
         400:
-          description: OpenStack environment is not ready for upgrade.
+          description: Cluster is not ready for upgrade.
           schema:
             $ref: '#/definitions/Error'
         404:
-          description: Either OpenStack environment or upgrade task not found.
+          description: Either cluster or upgrade task not found.
           schema:
             $ref: '#/definitions/Error'
 definitions:
@@ -198,4 +198,4 @@ definitions:
       cluster_id:
         type: string
         description: |
-          A unique identifier representing assigned OpenStack environment.
+          A unique identifier representing assigned cluster.

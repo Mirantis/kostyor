@@ -307,5 +307,33 @@ def cluster_list():
     return jsonify(clusters)
 
 
+@app.route('/clusters/<cluster_id>/services')
+def service_list(cluster_id):
+    try:
+        db_api.get_cluster(cluster_id)
+    except Exception as e:
+        return generate_response(404, six.text_type(e))
+
+    hosts = db_api.get_hosts_by_cluster(cluster_id)
+    services = []
+    for host in hosts:
+        services += db_api.get_services_by_host(host['id'])
+    services = sorted(services, key=lambda s: s['name'])
+    resp = jsonify(services)
+    return resp
+
+
+@app.route('/clusters/<cluster_id>/hosts')
+def host_list(cluster_id):
+    try:
+        db_api.get_cluster(cluster_id)
+    except Exception as ex:
+        return generate_response(404, six.text_type(ex))
+
+    hosts = db_api.get_hosts_by_cluster(cluster_id)
+    resp = jsonify(hosts)
+    return resp
+
+
 if __name__ == '__main__':
     app.run()

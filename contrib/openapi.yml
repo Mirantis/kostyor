@@ -41,6 +41,50 @@ paths:
           description: Cluster not found.
           schema:
             $ref: '#/definitions/Error'
+  /clusters/{id}/hosts:
+    get:
+      summary: List hosts in a cluster
+      parameters:
+        - name: id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific cluster.
+      responses:
+        200:
+          description: List all hosts in the cluster.
+          schema:
+            type: array
+            tems:
+              $ref: '#/definitions/Host'
+        404:
+          description: Cluster not found.
+          schema:
+            $ref: '#/definitions/Error'
+  /clusters/{id}/services:
+    get:
+      summary: List services in a cluster
+      parameters:
+        - name: id
+          type: string
+          pattern: *UUID_PATTERN
+          required: true
+          in: path
+          description: |
+            Unique identifier representing the specific cluster.
+      responses:
+        200:
+          description: List of all services in a cluster.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Service'
+        404:
+          description: Cluster not found.
+          schema:
+            $ref: '#/definitions/Error'
   /clusters/{id}/upgrades:
     get:
       summary: List Upgrade Tasks of Clusters
@@ -199,3 +243,41 @@ definitions:
         type: string
         description: |
           A unique identifier representing assigned cluster.
+  Host:
+    type: object
+    required:
+      - id
+      - hostname
+      - cluster_id
+    properties:
+      id:
+        type: string
+        pattern: *UUID_PATTERN
+      hostname:
+        type: string
+      cluster_id:
+        type: string
+        pattern: *UUID_PATTERN
+        description: |
+          A unique identifier representing assigned cluster.
+  Service:
+    type: object
+    required:
+      - id
+      - name
+      - host_id
+      - version
+    properties:
+      id:
+        type: string
+        pattern: *UUID_PATTERN
+      name:
+        type: string
+      host_id:
+        type: string
+        pattern: *UUID_PATTERN
+        description: |
+          A unique identifier representing assigned host.
+      version:
+        type: string
+        enum: *OPENSTACK_VERSIONS

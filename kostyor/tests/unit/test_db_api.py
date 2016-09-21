@@ -28,6 +28,9 @@ class DbApiTestCase(base.BaseTestCase):
         db_api.db_session = self.context.session
         db_api.engine = self.context.engine
         models.Base.metadata.create_all(self.context.engine)
+        self.cluster = db_api.create_cluster("test",
+                                             constants.MITAKA,
+                                             constants.READY_FOR_UPGRADE)
         self.context.session.commit()
 
     def tearDown(self):
@@ -37,9 +40,6 @@ class DbApiTestCase(base.BaseTestCase):
         self.context.connection.close()
 
     def test_create_cluster(self):
-        db_api.create_cluster("test", constants.MITAKA,
-                              constants.READY_FOR_UPGRADE)
-
         result = db_api.get_clusters()
 
         self.assertIn("clusters", result)
@@ -55,19 +55,18 @@ class DbApiTestCase(base.BaseTestCase):
             db_api.create_cluster("test" + str(i), constants.MITAKA,
                                   constants.READY_FOR_UPGRADE)
 
-        expected = db_api.get_clusters()
+        expected = db_api.get_clusters()['clusters']
 
-        self.assertEqual(len(expected['clusters']), 10)
+        cluster_names = [cluster['name'] for cluster in expected]
+        for i in range(0, 10):
+            self.assertIn("test" + str(i), cluster_names)
 
     def test_update_cluster(self):
-        cluster = db_api.create_cluster("test", constants.MITAKA,
-                                        constants.READY_FOR_UPGRADE)
-
         update = {"name": "foo!"}
 
-        db_api.update_cluster(cluster['id'], **update)
+        db_api.update_cluster(self.cluster['id'], **update)
 
-        result = db_api.get_cluster(cluster['id'])
+        result = db_api.get_cluster(self.cluster['id'])
 
         self.assertEqual(update['name'], result['name'])
 
@@ -75,3 +74,33 @@ class DbApiTestCase(base.BaseTestCase):
         methods = db_api.get_discovery_methods()
         # we don't care about ordering here, so let's compare sorted arrays
         self.assertEqual(sorted(methods), sorted([constants.OPENSTACK]))
+
+    def test_get_hosts_by_cluster_existing_cluster_success(self):
+        host = db_api.create_host('hostname', self.cluster['id'])
+        expected_result = [{'id': host['id'],
+                            'hostname': 'hostname',
+                            'cluster_id': self.cluster['id']}]
+
+        result = db_api.get_hosts_by_cluster(self.cluster['id'])
+        self.assertEqual(expected_result, result)
+
+    def test_get_host_by_cluster_wrong_cluster_id_empty_list(self):
+        result = db_api.get_hosts_by_cluster('fake-cluster-id')
+        self.assertEqual([], result)
+
+    def test_get_services_by_host_existing_cluster_success(self):
+        host = db_api.create_host('hostname', self.cluster['id'])
+        service = db_api.create_service('nova-api',
+                                        host['id'],
+                                        constants.MITAKA)
+        expected_result = [{'id': service['id'],
+                            'name': 'nova-api',
+                            'host_id': host['id'],
+                            'version': constants.MITAKA}]
+
+        result = db_api.get_services_by_host(host['id'])
+        self.assertEqual(expected_result, result)
+
+    def test_get_services_by_host_wrong_host_id_empty_list(self):
+        result = db_api.get_services_by_host('fake-host-id')
+        self.assertEqual([], result)

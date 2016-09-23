@@ -5,6 +5,11 @@ import six
 @six.add_metaclass(abc.ABCMeta)
 class UpgradeDriver():
     
+    @abc.abstractproperty
+    def supports_upgrade_rollback(self):
+    """Property used to indicate if an implementation supports rolling back an upgrade"""
+        pass
+    
     @abc.abstractmethod
     def pre_host_upgrade_hook(self, host):
     """Called by the decision engine before a host is upgraded,
@@ -51,4 +56,24 @@ class UpgradeDriver():
     
     service: a kostyor.db.models.Service instance, representing the host that is scheduled to be upgraded
     """
+        pass
+
+    @abc.abstractmethod
+    def cancel_upgrade(self):
+        pass
+    
+    @abc.abstractmethod
+    def rollback_upgrade(self):
+        pass
+
+    @abc.abstractmethod
+    def start_upgrade(self):
+        pass
+    
+    @abc.abstractmethod
+    def stop_upgrade(self):
+        pass
+    
+    @abc.abstractmethod
+    def pause_upgrade(self):
         pass

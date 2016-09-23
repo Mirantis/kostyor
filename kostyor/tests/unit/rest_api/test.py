@@ -6,7 +6,7 @@ import unittest
 
 from kostyor.db import api as db_api
 from kostyor.rest_api import app
-from kostyor.common import constants
+from kostyor.common import constants, exceptions as kostyor_exc
 sys.modules['kostyor.conf'] = mock.Mock()
 
 
@@ -28,33 +28,6 @@ class KostyorRestAPITest(unittest.TestCase):
             'name': 'hostname_1',
             'cluster_id': '1234'
         }
-
-    @mock.patch('kostyor.db.api.get_cluster')
-    def test_get_cluster_status(self, fake_db_get_cluster):
-        expected = {'status': 'done', 'name': 'tmp', 'id': '123'}
-        fake_db_get_cluster.return_value = expected
-        res = self.app.get('/clusters/{}'.format(self.cluster_id))
-        self.assertEqual(200, res.status_code)
-        data = res.data.decode('utf-8')
-        received = json.loads(data)
-        self.assertEqual(expected, received)
-
-    @mock.patch('kostyor.db.api.get_cluster')
-    def test_get_cluster_404(self, fake_db_get_cluster):
-        fake_db_get_cluster.return_value = None
-        res = self.app.get('/clusters/{}'.format(self.cluster_id))
-        self.assertEqual(404, res.status_code)
-
-    @mock.patch('kostyor.db.api.get_upgrade')
-    def test_get_upgrade_status(self, fake_db_get_upgrade):
-        expected = {'status': 'status',
-                    'id': '123'}
-        fake_db_get_upgrade.return_value = expected
-        res = self.app.get('/upgrades/{}'.format(self.cluster_id))
-        self.assertEqual(200, res.status_code)
-        data = res.data.decode('utf-8')
-        received = json.loads(data)
-        self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.get_upgrade_by_cluster')
     def test_get_upgrade_status_404(self, fake_db_get_upgrade_by_cluster):
@@ -103,29 +76,18 @@ class KostyorRestAPITest(unittest.TestCase):
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    @mock.patch('kostyor.db.api.get_cluster')
-    def test_create_cluster_upgrade_404(self,
-                                        fake_get_cluster,
-                                        fake_db_create_cluster_upgrade):
-        fake_db_create_cluster_upgrade.return_value = None
-        fake_get_cluster.return_value = {'version': 'liberty', 'status':
-                                         constants.READY_FOR_UPGRADE}
+    def test_create_cluster_upgrade_404(self, fake_db_create_cluster_upgrade):
+        fake_db_create_cluster_upgrade.side_effect = \
+            kostyor_exc.ClusterNotFound('cluster not found')
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'mitaka'})
         self.assertEqual(404, res.status_code)
 
-    @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    def test_create_cluster_upgrade(self,
-                                    fake_db_create_cluster_upgrade,
-                                    fake_get_cluster):
+    def test_create_cluster_upgrade(self, fake_db_create_cluster_upgrade):
         expected = {'id': self.cluster_id, 'status': 'upgrading'}
 
         fake_db_create_cluster_upgrade.return_value = expected
-        fake_get_cluster.return_value = {'id': self.cluster_id,
-                                         'name': 'test cluster',
-                                         'version': constants.LIBERTY,
-                                         'status': constants.READY_FOR_UPGRADE}
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'newton'})
         data = res.data.decode('utf-8')

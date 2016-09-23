@@ -85,11 +85,12 @@ paths:
           description: Cluster not found.
           schema:
             $ref: '#/definitions/Error'
-  /clusters/{id}/upgrades:
+  /upgrades:
     get:
-      summary: List Upgrade Tasks of Clusters
+      summary: List Upgrade Tasks
       parameters:
-        - name: id
+        - name: cluster_id
+          in: query
           type: string
           pattern: *UUID_PATTERN
           required: true
@@ -103,20 +104,28 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Upgrade'
-        404:
-          description: Cluster not found.
-          schema:
-            $ref: '#/definitions/Error'
     post:
       summary: Start Cluster Upgrade
       parameters:
-        - name: id
-          type: string
-          pattern: *UUID_PATTERN
-          required: true
-          in: path
-          description: |
-            Unique identifier representing the specific cluster.
+        - name: payload
+          in: body
+          schema:
+            type: object
+            required:
+              - cluster_id
+              - to_version
+            properties:
+              cluster_id:
+                type: string
+                pattern: *UUID_PATTERN
+                description: An OpenStack cluster to start upgrade on.
+              to_version:
+                type: string
+                enum: &OPENSTACK_VERSIONS
+                  - unknown
+                  - liberty
+                  - mitaka
+                  - newton
       responses:
         202:
           description: A task instance to track the progress.
@@ -130,7 +139,7 @@ paths:
           description: Cluster not found.
           schema:
             $ref: '#/definitions/Error'
-  /clusters/{id}/upgrades/{upgrade_id}:
+  /upgrades/{id}:
     get:
       summary: Show Upgrade Task
       parameters:
@@ -159,14 +168,27 @@ paths:
           required: true
           in: path
           description: |
-            Unique identifier representing the specific cluster.
-        - name: upgrade_id
-          type: string
-          pattern: *UUID_PATTERN
-          required: true
-          in: path
-          description: |
             Unique identifier representing the specific upgrade task.
+        - name: payload
+          in: body
+          schema:
+            type: object
+            required:
+              - cluster_id
+              - action
+            properties:
+              cluster_id:
+                type: string
+                pattern: *UUID_PATTERN
+                description: An OpenStack cluster to start upgrade on.
+              action:
+                type: string
+                enum:
+                  - pause
+                  - continue
+                  - cancel
+                  - rollback
+                description: An action to be executed.
       responses:
         200:
           description: A task instance to track the progress.
@@ -196,11 +218,7 @@ definitions:
         type: string
       version:
         type: string
-        enum: &OPENSTACK_VERSIONS
-          - unknown
-          - liberty
-          - mitaka
-          - newton
+        enum: *OPENSTACK_VERSIONS
       status:
         type: string
         enum: &ENVIRONMENT_STATUSES

@@ -3,19 +3,38 @@ import copy
 from collections import defaultdict
 
 from flask import Flask, jsonify, redirect, request, url_for
+from flask_restful import Api
 from keystoneauth1 import exceptions
 from keystoneauth1 import session
 from keystoneauth1.identity import v2
 import six
 
-from kostyor.common import constants
+from kostyor.common import constants, exceptions as kostyor_exc
 from kostyor.inventory import discover
 from kostyor.inventory import upgrades
+from kostyor import resources
 
 from kostyor.db import api as db_api
 from kostyor.db.api import db_session
 
 app = Flask(__name__)
+api = Api(app)
+
+
+# Flask-RESTful extends each 404 respond with custom message about close
+# endpoints. It works pretty awful and unexpected when you explicitly
+# specifies error message. Let's turn off it so any error message become
+# predicted.
+app.config['ERROR_404_HELP'] = False
+
+# New API endpoints should be implemented via Flask-RESTful and added here.
+# Once old ones are reimplemented - we can get rid of them and even provide
+# some factory function to return Flask application.
+api.add_resource(resources.Clusters, '/clusters')
+api.add_resource(resources.Cluster, '/clusters/<cluster_id>')
+
+api.add_resource(resources.Upgrades, '/upgrades')
+api.add_resource(resources.Upgrade, '/upgrades/<upgrade_id>')
 
 
 @app.teardown_appcontext
@@ -30,46 +49,16 @@ def generate_response(status, message):
     return resp
 
 
-@app.route('/clusters/<cluster_id>')
-def get_cluster(cluster_id):
-    cluster = db_api.get_cluster(cluster_id)
-    if not cluster:
-        resp = generate_response(404, 'Cluster %s not found' % cluster_id)
-        return resp
-
-    resp = jsonify(cluster)
-    return resp
-
-
-@app.route('/clusters/<cluster_id>', methods=['PUT'])
-def update_cluster(cluster_id):
-    db_api.update_cluster(cluster_id, **request.form)
-    return generate_response(200, 'Cluster %s updated' % cluster_id)
-
-
 @app.route('/upgrade-status/<cluster_id>')
 def get_upgrade_status(cluster_id):
     upgrade = db_api.get_upgrade_by_cluster(cluster_id)
     if upgrade:
-        full_url = url_for('.get_upgrade', upgrade_id=upgrade['id'])
+        full_url = url_for(
+            '.upgrade', cluster_id=cluster_id, upgrade_id=upgrade['id'])
         return redirect(full_url)
     else:
         return generate_response(404, 'Upgrade for cluster %s not found' %
                                  cluster_id)
-
-
-@app.route('/upgrades/<upgrade_id>')
-def get_upgrade(upgrade_id):
-    upgrade = db_api.get_upgrade(upgrade_id)
-    if not upgrade:
-        resp = generate_response(
-            404,
-            'Upgrade %s not found' % upgrade_id
-        )
-        return resp
-
-    resp = jsonify(upgrade)
-    return resp
 
 
 @app.route('/discovery-methods')
@@ -175,30 +164,12 @@ def create_cluster_upgrade(cluster_id):
         return resp
 
     try:
-        cluster = db_api.get_cluster(cluster_id)
-    except Exception as ex:
-        return generate_response(404, ex.message)
-    if cluster['version'] == constants.UNKNOWN:
-        resp = generate_response(400, 'Cluster version is unknown')
-    if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
-            constants.OPENSTACK_VERSIONS.index(to_version)):
-        resp = generate_response(
-            400,
-            'Cluster version is the same or newer than %s' % to_version
-        )
-        return resp
+        upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
 
-    if cluster['status'] == constants.UPGRADE_IN_PROGRESS:
-        return generate_response(400, "Cluster %s already has an upgrade in \
-                                 progress" % cluster_id)
-
-    upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
-    if not upgrade:
-        resp = generate_response(
-            404,  # TODO probable should fix it later
-            'Failed to create cluster upgrade for cluster: %s' % cluster_id
-        )
-        return resp
+    except kostyor_exc.BadRequest as exc:
+        return generate_response(400, six.text_type(exc))
+    except kostyor_exc.NotFound as exc:
+        return generate_response(404, six.text_type(exc))
 
     resp = jsonify(upgrade)
     resp.status_code = 201
@@ -299,12 +270,6 @@ def rollback_cluster_upgrade(cluster_id):
 
     resp = jsonify(upgrade)
     return resp
-
-
-@app.route('/clusters', methods=['GET'])
-def cluster_list():
-    clusters = db_api.get_clusters()
-    return jsonify(clusters)
 
 
 @app.route('/clusters/<cluster_id>/services')

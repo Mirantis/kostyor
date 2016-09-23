@@ -1,8 +1,10 @@
 import datetime
 import six
 
-from kostyor.common import constants, exceptions
+from kostyor.common import constants
 from kostyor.db import models
+
+from six.moves import map
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -52,26 +54,6 @@ def create_discovery_method(method):
 
 def create_cluster_upgrade(cluster_id, to_version):
     cluster = db_session.query(models.Cluster).get(cluster_id)
-
-    if cluster is None:
-        raise exceptions.ClusterNotFound(
-            'Cluster "%s" not found.' % cluster_id)
-
-    if cluster.version == constants.UNKNOWN:
-        raise exceptions.ClusterVersionIsUnknown('Cluster version is unknown')
-
-    if cluster.status == constants.UPGRADE_IN_PROGRESS:
-        raise exceptions.UpgradeIsInProgress(
-            'Cluster %s already has an upgrade in progress.' % cluster_id)
-
-    if (constants.OPENSTACK_VERSIONS.index(cluster.version)
-            >= constants.OPENSTACK_VERSIONS.index(to_version)):
-        raise exceptions.CannotUpgradeToLowerVersion(
-            'Upgrade procedure from "%s" to "%s" is not allowed.' % (
-                cluster.version, to_version
-            )
-        )
-
     cluster.status = constants.UPGRADE_IN_PROGRESS
     u_task = models.UpgradeTask()
     u_task.cluster_id = cluster_id
@@ -81,7 +63,7 @@ def create_cluster_upgrade(cluster_id, to_version):
     db_session.add(u_task)
     db_session.commit()
     # TODO(sc68cal) RPC or calls to task broker to start upgrade
-    return u_task.to_dict()
+    return {'id': cluster_id, 'status': constants.UPGRADE_IN_PROGRESS}
 
 
 def cancel_cluster_upgrade(cluster_id):
@@ -122,17 +104,9 @@ def rollback_cluster_upgrade(cluster_id):
 
 
 def get_clusters():
-    # TODO(ikalnitsky): implement pagination in params
-    return [cluster.to_dict() for cluster in db_session.query(models.Cluster)]
-
-
-def get_upgrades(cluster_id=None):
-    query = db_session.query(models.UpgradeTask)
-
-    if cluster_id is not None:
-        query = query.filter_by(cluster_id=cluster_id)
-
-    return [upgrade.to_dict() for upgrade in query]
+    return {'clusters': list(map(lambda x: {'id': x.id, 'name': x.name,
+                                            'status': x.status},
+                                 db_session.query(models.Cluster).all()))}
 
 
 def create_host(name, cluster_id):

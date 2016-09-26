@@ -1,6 +1,3 @@
-import uuid
-import datetime
-
 from kostyor.db import models
 from kostyor.db import api as db_api
 
@@ -9,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from oslotest import base
 
-from kostyor.common import constants, exceptions
+from kostyor.common import constants
 
 
 class KostyorTestContext(object):
@@ -106,84 +103,3 @@ class DbApiTestCase(base.BaseTestCase):
     def test_get_services_by_host_wrong_host_id_empty_list(self):
         result = db_api.get_services_by_host('fake-host-id')
         self.assertEqual([], result)
-
-    def test_get_upgrades(self):
-        expected = [
-            {
-                'id': str(uuid.uuid4()),
-                'cluster_id': str(uuid.uuid4()),
-                'from_version': constants.MITAKA,
-                'to_version': constants.NEWTON,
-                'status': constants.UPGRADE_PAUSED,
-                'upgrade_start_time': datetime.datetime.utcnow(),
-                'upgrade_end_time': datetime.datetime.utcnow(),
-            } for _ in range(0, 2)
-        ]
-        self.context.session.bulk_insert_mappings(models.UpgradeTask, expected)
-
-        retrieved = db_api.get_upgrades()
-        self.assertEqual(expected, retrieved)
-
-    def test_get_upgrades_w_cluster_id(self):
-        expected = [
-            {
-                'id': str(uuid.uuid4()),
-                'cluster_id': str(uuid.uuid4()),
-                'from_version': constants.MITAKA,
-                'to_version': constants.NEWTON,
-                'status': constants.UPGRADE_PAUSED,
-                'upgrade_start_time': datetime.datetime.utcnow(),
-                'upgrade_end_time': datetime.datetime.utcnow(),
-            } for _ in range(0, 3)
-        ]
-        # make second entry to belong the same cluster as first one does
-        expected[1]['cluster_id'] = expected[0]['cluster_id']
-        self.context.session.bulk_insert_mappings(models.UpgradeTask, expected)
-
-        retrieved = db_api.get_upgrades(expected[0]['cluster_id'])
-        self.assertEqual(expected[0:2], retrieved)
-
-    def test_create_cluster_upgrade(self):
-        cluster = db_api.create_cluster("test",
-                                        constants.MITAKA,
-                                        constants.READY_FOR_UPGRADE)
-        upgrade = db_api.create_cluster_upgrade(cluster['id'],
-                                                constants.NEWTON)
-
-        self.assertIsNotNone(upgrade['id'])
-        self.assertEqual(cluster['id'], upgrade['cluster_id'])
-        self.assertEqual(constants.MITAKA, upgrade['from_version'])
-        self.assertEqual(constants.NEWTON, upgrade['to_version'])
-
-    def test_create_cluster_upgrade_not_found(self):
-        self.assertRaises(exceptions.ClusterNotFound,
-                          db_api.create_cluster_upgrade,
-                          'non-existing-id',
-                          constants.NEWTON)
-
-    def test_create_cluster_upgrade_version_unknown(self):
-        cluster = db_api.create_cluster("test",
-                                        constants.UNKNOWN,
-                                        constants.READY_FOR_UPGRADE)
-        self.assertRaises(exceptions.ClusterVersionIsUnknown,
-                          db_api.create_cluster_upgrade,
-                          cluster['id'],
-                          constants.NEWTON)
-
-    def test_create_cluster_upgrade_in_progress(self):
-        cluster = db_api.create_cluster("test",
-                                        constants.MITAKA,
-                                        constants.UPGRADE_IN_PROGRESS)
-        self.assertRaises(exceptions.UpgradeIsInProgress,
-                          db_api.create_cluster_upgrade,
-                          cluster['id'],
-                          constants.NEWTON)
-
-    def test_create_cluster_upgrade_lower_version(self):
-        cluster = db_api.create_cluster("test",
-                                        constants.MITAKA,
-                                        constants.READY_FOR_UPGRADE)
-        self.assertRaises(exceptions.CannotUpgradeToLowerVersion,
-                          db_api.create_cluster_upgrade,
-                          cluster['id'],
-                          constants.LIBERTY)

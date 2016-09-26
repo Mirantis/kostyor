@@ -9,7 +9,7 @@ from keystoneauth1 import session
 from keystoneauth1.identity import v2
 import six
 
-from kostyor.common import constants, exceptions as kostyor_exc
+from kostyor.common import constants
 from kostyor.inventory import discover
 from kostyor.inventory import upgrades
 from kostyor import resources
@@ -33,9 +33,6 @@ app.config['ERROR_404_HELP'] = False
 api.add_resource(resources.Clusters, '/clusters')
 api.add_resource(resources.Cluster, '/clusters/<cluster_id>')
 
-api.add_resource(resources.Upgrades, '/upgrades')
-api.add_resource(resources.Upgrade, '/upgrades/<upgrade_id>')
-
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -53,12 +50,25 @@ def generate_response(status, message):
 def get_upgrade_status(cluster_id):
     upgrade = db_api.get_upgrade_by_cluster(cluster_id)
     if upgrade:
-        full_url = url_for(
-            '.upgrade', cluster_id=cluster_id, upgrade_id=upgrade['id'])
+        full_url = url_for('.get_upgrade', upgrade_id=upgrade['id'])
         return redirect(full_url)
     else:
         return generate_response(404, 'Upgrade for cluster %s not found' %
                                  cluster_id)
+
+
+@app.route('/upgrades/<upgrade_id>')
+def get_upgrade(upgrade_id):
+    upgrade = db_api.get_upgrade(upgrade_id)
+    if not upgrade:
+        resp = generate_response(
+            404,
+            'Upgrade %s not found' % upgrade_id
+        )
+        return resp
+
+    resp = jsonify(upgrade)
+    return resp
 
 
 @app.route('/discovery-methods')
@@ -164,12 +174,30 @@ def create_cluster_upgrade(cluster_id):
         return resp
 
     try:
-        upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
+        cluster = db_api.get_cluster(cluster_id)
+    except Exception as ex:
+        return generate_response(404, ex.message)
+    if cluster['version'] == constants.UNKNOWN:
+        resp = generate_response(400, 'Cluster version is unknown')
+    if (constants.OPENSTACK_VERSIONS.index(cluster['version']) >=
+            constants.OPENSTACK_VERSIONS.index(to_version)):
+        resp = generate_response(
+            400,
+            'Cluster version is the same or newer than %s' % to_version
+        )
+        return resp
 
-    except kostyor_exc.BadRequest as exc:
-        return generate_response(400, six.text_type(exc))
-    except kostyor_exc.NotFound as exc:
-        return generate_response(404, six.text_type(exc))
+    if cluster['status'] == constants.UPGRADE_IN_PROGRESS:
+        return generate_response(400, "Cluster %s already has an upgrade in \
+                                 progress" % cluster_id)
+
+    upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
+    if not upgrade:
+        resp = generate_response(
+            404,  # TODO probable should fix it later
+            'Failed to create cluster upgrade for cluster: %s' % cluster_id
+        )
+        return resp
 
     resp = jsonify(upgrade)
     resp.status_code = 201

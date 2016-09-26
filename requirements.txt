@@ -13,3 +13,4 @@ oslo.config
 oslo.utils
 sqlalchemy
 alembic
+celery

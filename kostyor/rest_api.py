@@ -1,4 +1,5 @@
 import copy
+import sys
 
 from collections import defaultdict
 
@@ -10,12 +11,12 @@ from keystoneauth1.identity import v2
 import six
 
 from kostyor.common import constants, exceptions as kostyor_exc
+from kostyor import conf
 from kostyor.inventory import discover
 from kostyor.inventory import upgrades
 from kostyor import resources
 
 from kostyor.db import api as db_api
-from kostyor.db.api import db_session
 
 app = Flask(__name__)
 api = Api(app)
@@ -39,7 +40,7 @@ api.add_resource(resources.Upgrade, '/upgrades/<upgrade_id>')
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    db_session.remove()
+    db_api.shutdown_session(exception)
 
 
 def generate_response(status, message):
@@ -301,4 +302,6 @@ def host_list(cluster_id):
 
 
 if __name__ == '__main__':
+    conf.parse_args(sys.argv[1:])
+    db_api.configure_session(conf.CONF.database.connection)
     app.run()

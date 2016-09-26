@@ -9,5 +9,6 @@ pytz
 flask
 flask_restful
 six
+oslo.config
 oslo.utils
 sqlalchemy

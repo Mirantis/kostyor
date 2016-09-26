@@ -8,17 +8,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 
-# TODO (sc68cal) save the database file in a configurable location
-engine = create_engine('sqlite:////tmp/test.db', convert_unicode=True)
-db_session = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
-                                         bind=engine))
+db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False))
 
 
 def _get_most_recent_upgrade_task(cluster_id):
     q = db_session.query(models.UpgradeTask).filter_by(
         cluster_id=cluster_id).order_by(models.UpgradeTask.upgrade_start_time)
     return q.first()
+
+
+def configure_session(database):
+    engine = create_engine(database, convert_unicode=True)
+    db_session.configure(bind=engine)
+
+
+def shutdown_session(exception=None):
+    # TODO dstepanenko: add handling for the case exception occured
+    db_session.remove()
 
 
 def get_cluster(cluster_id):

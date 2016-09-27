@@ -1,8 +1,10 @@
 import json
-from keystoneauth1 import exceptions
-import mock
 import sys
 import unittest
+
+from flask import wrappers
+from keystoneauth1 import exceptions
+import mock
 
 from kostyor.db import api as db_api
 from kostyor.rest_api import app
@@ -10,10 +12,20 @@ from kostyor.common import constants, exceptions as kostyor_exc
 sys.modules['kostyor.conf'] = mock.Mock()
 
 
+class TestResponse(wrappers.Response):
+    def get_json(self):
+        try:
+            data = self.get_data(as_text=True)
+            return json.loads(data)
+        except ValueError:
+            return {}
+
+
 class KostyorRestAPITest(unittest.TestCase):
 
     def setUp(self):
         self.app = app.test_client()
+        self.app.response_wrapper = TestResponse
         self.cluster_id = 123
         self.discover_cluster_request_data = {
             'method': 'openstack',
@@ -42,20 +54,18 @@ class KostyorRestAPITest(unittest.TestCase):
         methods = ['method1', 'method2']
         fake_conf_get_discovery_methods.return_value = methods
         res = self.app.get('/discovery-methods')
-        str_data = res.data.decode('utf-8')
-        data = json.loads(str_data)
-        received = data['items']
-        expected = [{'method': method} for method in methods]
         self.assertEqual(200, res.status_code)
+        data = res.get_json()
+        received = data.get('items')
+        expected = [{'method': method} for method in methods]
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.get_cluster')
     def test_get_upgrade_versions(self, fake_db_get_cluster):
         fake_db_get_cluster.return_value = {'version': 'liberty'}
         res = self.app.get('/upgrade-versions/{}'.format(self.cluster_id))
-        data = res.data.decode('utf-8')
-        received = json.loads(data)
         self.assertEqual(200, res.status_code)
+        received = res.get_json()
         self.assertEqual(['mitaka', 'newton'], received)
 
     @mock.patch('kostyor.db.api.create_discovery_method')
@@ -70,9 +80,8 @@ class KostyorRestAPITest(unittest.TestCase):
 
         fake_db_create_disc_method.return_value = expected
         res = self.app.post('/create-discovery-method')
-        data = res.data.decode('utf-8')
-        received = json.loads(data)
         self.assertEqual(201, res.status_code)
+        received = res.get_json()
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
@@ -90,9 +99,8 @@ class KostyorRestAPITest(unittest.TestCase):
         fake_db_create_cluster_upgrade.return_value = expected
         res = self.app.post('/upgrade-cluster/{}'.format(self.cluster_id),
                             data={'version': 'newton'})
-        data = res.data.decode('utf-8')
-        received = json.loads(data)
         self.assertEqual(201, res.status_code)
+        received = res.get_json()
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.inventory.upgrades.cancel_upgrade')
@@ -259,10 +267,8 @@ class KostyorRestAPITest(unittest.TestCase):
 
         res = self.app.post('/discover-cluster',
                             data=self.discover_cluster_request_data)
-        decoded_res = res.data.decode('utf-8')
-        data = json.loads(decoded_res)
-
         self.assertEqual(201, res.status_code)
+        data = res.get_json()
         self.assertEqual(cluster, data)
         fake_password.assert_called_once_with(username='admin',
                                               password='qwerty',
@@ -322,7 +328,7 @@ class KostyorRestAPITest(unittest.TestCase):
         res = self.app.get('/clusters/1234/hosts')
 
         self.assertEqual(200, res.status_code)
-        hosts = json.loads(res.data.decode('utf-8'))
+        hosts = res.get_json()
         self.assertEqual(fake_hosts, hosts)
         db_api.get_cluster.assert_called_once_with('1234')
         db_api.get_hosts_by_cluster.assert_called_once_with('1234')
@@ -359,7 +365,7 @@ class KostyorRestAPITest(unittest.TestCase):
         res = self.app.get('/clusters/1234/services')
 
         self.assertEqual(200, res.status_code)
-        services = json.loads(res.data.decode('utf-8'))
+        services = res.get_json()
         self.assertEqual([fake_keystone_api, fake_nova_api], services)
         db_api.get_cluster.assert_called_once_with('1234')
         db_api.get_hosts_by_cluster.assert_called_once_with('1234')

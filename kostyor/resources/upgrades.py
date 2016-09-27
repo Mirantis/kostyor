@@ -1,3 +1,4 @@
+import cerberus
 import six
 
 from flask import request
@@ -20,6 +21,12 @@ _PUBLIC_ATTRIBUTES = {
 
 class Upgrades(Resource):
 
+    _schema = {
+        'cluster_id': {'type': 'string', 'required': True},
+        'to_version': {'type': 'string', 'required': True,
+                       'allowed': constants.OPENSTACK_VERSIONS},
+    }
+
     @marshal_with(_PUBLIC_ATTRIBUTES)
     def get(self):
         return db_api.get_upgrades()
@@ -28,16 +35,12 @@ class Upgrades(Resource):
     def post(self):
         payload = request.get_json()
 
-        # TODO: replace a set of validations with some sort of schema
-        #       validation (e.g. cerberus).
-        if 'to_version' not in payload:
-            abort(400, message='"to_version" is a required parameter.')
-        elif payload['to_version'].lower() not in constants.OPENSTACK_VERSIONS:
-            abort(400, message=('Unsupported "to_version": %s' %
-                                payload['to_version']))
-
-        if 'cluster_id' not in payload:
-            abort(400, message='"cluster_id" is a required parameter.')
+        validator = cerberus.Validator(self._schema)
+        if not validator.validate(payload):
+            abort(400,
+                  message='Cannot create an upgrade task, passed data are '
+                          'incorrect. See "errors" attribute for details.',
+                  errors=validator.errors)
 
         try:
             upgrade = db_api.create_cluster_upgrade(
@@ -61,6 +64,12 @@ class Upgrade(Resource):
         'rollback': db_api.rollback_cluster_upgrade,
     }
 
+    _schema = {
+        'cluster_id': {'type': 'string', 'required': True},
+        'action': {'type': 'string', 'required': True,
+                   'allowed': list(_actions)},
+    }
+
     @marshal_with(_PUBLIC_ATTRIBUTES)
     def get(self, upgrade_id):
         upgrade = db_api.get_upgrade(upgrade_id)
@@ -77,11 +86,12 @@ class Upgrade(Resource):
         #        we should either pass it to DBAPI or use another API design.
         payload = request.get_json()
 
-        if 'cluster_id' not in payload:
-            abort(400, message='"cluster_id" is a required parameter.')
-
-        if payload['action'] not in self._actions:
-            abort(400, message='Action %s not supported.' % payload['action'])
+        validator = cerberus.Validator(self._schema)
+        if not validator.validate(payload):
+            abort(400,
+                  message='Cannot update an upgrade task, passed data are '
+                          'incorrect. See "errors" attribute for details.',
+                  errors=validator.errors)
 
         fn = self._actions[payload['action']]
 

@@ -8,6 +8,7 @@ pbr
 pytz
 flask
 flask_restful
+cerberus
 six
 oslo.config
 oslo.utils

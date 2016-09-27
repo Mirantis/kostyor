@@ -109,7 +109,11 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         self.assertEqual(400, resp.status_code)
 
         error = json.loads(resp.get_data(as_text=True))
-        expected_error = {'message': '"to_version" is a required parameter.'}
+        expected_error = {
+            'message': 'Cannot create an upgrade task, passed data are '
+                       'incorrect. See "errors" attribute for details.',
+            'errors': {'to_version': ['required field']},
+        }
 
         self.assertEqual(expected_error, error)
         self.assertFalse(fake_create_upgrade.called)
@@ -126,7 +130,11 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         self.assertEqual(400, resp.status_code)
 
         error = json.loads(resp.get_data(as_text=True))
-        expected_error = {'message': '"cluster_id" is a required parameter.'}
+        expected_error = {
+            'message': 'Cannot create an upgrade task, passed data are '
+                       'incorrect. See "errors" attribute for details.',
+            'errors': {'cluster_id': ['required field']},
+        }
 
         self.assertEqual(expected_error, error)
         self.assertFalse(fake_create_upgrade.called)
@@ -145,7 +153,9 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
 
         error = json.loads(resp.get_data(as_text=True))
         expected_error = {
-            'message': 'Unsupported "to_version": unsupported-value',
+            'message': 'Cannot create an upgrade task, passed data are '
+                       'incorrect. See "errors" attribute for details.',
+            'errors': {'to_version': ['unallowed value unsupported-value']},
         }
         self.assertEqual(expected_error, error)
         self.assertFalse(fake_db_create_upgrade.called)
@@ -258,3 +268,24 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
 
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
+
+    def test_put_upgrade_unsupported(self):
+        action_fn = mock.Mock(return_value=self.fake_upgrade)
+        with mock.patch.dict(Upgrade._actions, {'unsupported': action_fn}):
+            resp = self.app.put(
+                '/upgrades/d8e98946-5a46-4516-9447-d16deb1d878b',
+                content_type='application/json',
+                data=json.dumps({
+                    'cluster_id': 'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161',
+                    'action': 'unsupported',
+                })
+            )
+            self.assertEqual(400, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        error = {
+            'message': 'Cannot update an upgrade task, passed data are '
+                       'incorrect. See "errors" attribute for details.',
+            'errors': {'action': [u'unallowed value unsupported']},
+        }
+        self.assertEqual(error, received)

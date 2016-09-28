@@ -2,6 +2,7 @@ import datetime
 import six
 
 from kostyor.common import constants, exceptions
+# from kostyor.core import engine as broker_engine
 from kostyor.db import models
 
 from sqlalchemy import create_engine
@@ -84,8 +85,10 @@ def create_cluster_upgrade(cluster_id, to_version):
     u_task.from_version = cluster.version
     u_task.to_version = to_version
     u_task.upgrade_start_time = datetime.datetime.now()
+    # TODO set driver type and options
     db_session.add(u_task)
     db_session.commit()
+    # broker_engine.start_upgrade(u_task)
     # TODO(sc68cal) RPC or calls to task broker to start upgrade
     return u_task.to_dict()
 

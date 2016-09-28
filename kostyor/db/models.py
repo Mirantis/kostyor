@@ -66,6 +66,18 @@ class UpgradeTask(Base, KostyorModelMixin):
     upgrade_start_time = sa.Column(sa.DateTime)
     upgrade_end_time = sa.Column(sa.DateTime)
     status = sa.Column(sa.Enum(*constants.STATUSES))
+    driver_type = sa.Column(sa.Enum(*constants.DEPLOY_DRIVERS))
+    driver_config = sa.Column(sa.String(255))
+
+    def to_dict(self):
+        return {'id': self.id,
+                'cluster_id': self.cluster_id,
+                'from_version': self.from_version,
+                'to_version': self.to_version,
+                'upgrade_start_time': self.upgrade_start_time,
+                'upgrade_end_time': self.upgrade_end_time,
+                'status': self.status,
+                }
 
 
 class ServiceUpgradeRecord(Base, KostyorModelMixin):

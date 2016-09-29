@@ -187,3 +187,23 @@ class DbApiTestCase(base.BaseTestCase):
                           db_api.create_cluster_upgrade,
                           cluster['id'],
                           constants.LIBERTY)
+
+    def test_cancel_cluster_upgrade_cluster_not_found(self):
+        self.assertRaises(exceptions.ClusterNotFound,
+                          db_api.cancel_cluster_upgrade,
+                          'non-existing-id')
+
+    def test_continue_cluster_upgrade_cluster_not_found(self):
+        self.assertRaises(exceptions.ClusterNotFound,
+                          db_api.continue_cluster_upgrade,
+                          'non-existing-id')
+
+    def test_pause_cluster_upgrade_cluster_not_found(self):
+        self.assertRaises(exceptions.ClusterNotFound,
+                          db_api.pause_cluster_upgrade,
+                          'non-existing-id')
+
+    def test_rollback_cluster_upgrade_cluster_not_found(self):
+        self.assertRaises(exceptions.ClusterNotFound,
+                          db_api.rollback_cluster_upgrade,
+                          'non-existing-id')

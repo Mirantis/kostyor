@@ -94,6 +94,10 @@ class Upgrade(Resource):
                   errors=validator.errors)
 
         fn = self._actions[payload['action']]
+        try:
+            # Would it better to pass upgrade_id instead?
+            upgrade = fn(payload['cluster_id'])
+        except exceptions.NotFound as exc:
+            abort(404, message=six.text_type(exc))
 
-        # Would it better to pass upgrade_id instead?
-        return fn(payload['cluster_id'])
+        return upgrade, 200

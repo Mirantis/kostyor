@@ -17,6 +17,17 @@ def _get_most_recent_upgrade_task(cluster_id):
     return q.first()
 
 
+def _get_cluster(cluster_id):
+    cluster = db_session.query(models.Cluster).get(cluster_id)
+
+    if cluster is None:
+        raise exceptions.ClusterNotFound(
+            'Cluster (ID="%s") not found.' % cluster_id
+        )
+
+    return cluster
+
+
 def configure_session(database):
     engine = create_engine(database, convert_unicode=True)
     db_session.configure(bind=engine)
@@ -28,10 +39,7 @@ def shutdown_session(exception=None):
 
 
 def get_cluster(cluster_id):
-    cluster = db_session.query(models.Cluster).get(cluster_id)
-    if not cluster:
-        raise Exception("Cluster with ID: %s not found" % cluster_id)
-    return cluster.to_dict()
+    return _get_cluster(cluster_id).to_dict()
 
 
 def get_upgrade_by_cluster(cluster_id):
@@ -57,11 +65,7 @@ def create_discovery_method(method):
 
 
 def create_cluster_upgrade(cluster_id, to_version):
-    cluster = db_session.query(models.Cluster).get(cluster_id)
-
-    if cluster is None:
-        raise exceptions.ClusterNotFound(
-            'Cluster "%s" not found.' % cluster_id)
+    cluster = _get_cluster(cluster_id)
 
     if cluster.version == constants.UNKNOWN:
         raise exceptions.ClusterVersionIsUnknown('Cluster version is unknown')
@@ -91,7 +95,7 @@ def create_cluster_upgrade(cluster_id, to_version):
 
 
 def cancel_cluster_upgrade(cluster_id):
-    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster = _get_cluster(cluster_id)
     u_task = _get_most_recent_upgrade_task(cluster_id)
     u_task.upgrade_end_time = datetime.datetime.now()
     u_task.status = cluster.status = constants.UPGRADE_CANCELLED
@@ -101,7 +105,7 @@ def cancel_cluster_upgrade(cluster_id):
 
 
 def continue_cluster_upgrade(cluster_id):
-    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster = _get_cluster(cluster_id)
     u_task = _get_most_recent_upgrade_task(cluster_id)
     u_task.status = cluster.status = constants.UPGRADE_IN_PROGRESS
     db_session.commit()
@@ -110,7 +114,7 @@ def continue_cluster_upgrade(cluster_id):
 
 
 def pause_cluster_upgrade(cluster_id):
-    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster = _get_cluster(cluster_id)
     u_task = _get_most_recent_upgrade_task(cluster_id)
     u_task.status = cluster.status = constants.UPGRADE_PAUSED
     db_session.commit()
@@ -119,7 +123,7 @@ def pause_cluster_upgrade(cluster_id):
 
 
 def rollback_cluster_upgrade(cluster_id):
-    cluster = db_session.query(models.Cluster).get(cluster_id)
+    cluster = _get_cluster(cluster_id)
     u_task = _get_most_recent_upgrade_task(cluster_id)
     u_task.status = cluster.status = constants.UPGRADE_ROLLBACK
     db_session.commit()

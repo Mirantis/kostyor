@@ -10,10 +10,9 @@ from keystoneauth1 import session
 from keystoneauth1.identity import v2
 import six
 
-from kostyor.common import constants, exceptions as kostyor_exc
+from kostyor.common import constants
 from kostyor import conf
 from kostyor.inventory import discover
-from kostyor.inventory import upgrades
 from kostyor import resources
 
 from kostyor.db import api as db_api
@@ -151,125 +150,6 @@ def discover_cluster():
 
     resp = jsonify(new_cluster)
     resp.status_code = 201
-    return resp
-
-
-@app.route('/upgrade-cluster/<cluster_id>', methods=['POST'])
-def create_cluster_upgrade(cluster_id):
-    to_version = request.form.get('version').lower()
-    if (to_version not in constants.OPENSTACK_VERSIONS):
-        resp = generate_response(
-            400,
-            'Unsupported version: %s' % to_version
-        )
-        return resp
-
-    try:
-        upgrade = db_api.create_cluster_upgrade(cluster_id, to_version)
-
-    except kostyor_exc.BadRequest as exc:
-        return generate_response(400, six.text_type(exc))
-    except kostyor_exc.NotFound as exc:
-        return generate_response(404, six.text_type(exc))
-
-    resp = jsonify(upgrade)
-    resp.status_code = 201
-    return resp
-
-
-@app.route('/upgrade-cancel/<cluster_id>', methods=['PUT'])
-def cancel_cluster_upgrade(cluster_id):
-    upgrade = db_api.cancel_cluster_upgrade(cluster_id)
-    if not upgrade:
-        resp = generate_response(
-            404,  # TODO probably should fix it later
-            'Failed to cancel cluster upgrade for cluster: %s' % cluster_id
-        )
-        return resp
-
-    status = upgrades.cancel_upgrade(cluster_id)
-    if status:
-        # TODO: cancel failed, probably should update cluster upgrade status
-        resp = generate_response(
-            500,  # TODO probably should fix it later
-            'Failed to cancel cluster upgrade for cluster: %s'
-            'with message %s' % (cluster_id, status)
-        )
-        return resp
-
-    resp = jsonify(upgrade)
-    return resp
-
-
-@app.route('/upgrade-continue/<cluster_id>', methods=['PUT'])
-def continue_cluster_upgrade(cluster_id):
-    upgrade = db_api.continue_cluster_upgrade(cluster_id)
-    if not upgrade:
-        resp = generate_response(
-            404,  # TODO probably should fix it later
-            'Failed to continue cluster upgrade for cluster: %s' % cluster_id
-        )
-        return resp
-
-    status = upgrades.continue_upgrade(cluster_id)
-    if status:
-        # TODO: continue failed, probably should update cluster upgrade status
-        resp = generate_response(
-            500,  # TODO probably should fix it later
-            'Failed to continue cluster upgrade for cluster %s '
-            'with message %s' % (cluster_id, status)
-        )
-        return resp
-
-    resp = jsonify(upgrade)
-    return resp
-
-
-@app.route('/upgrade-pause/<cluster_id>', methods=['PUT'])
-def pause_cluster_upgrade(cluster_id):
-    upgrade = db_api.pause_cluster_upgrade(cluster_id)
-    if not upgrade:
-        resp = generate_response(
-            404,  # TODO probably should fix it later
-            'Failed to pause cluster upgrade for cluster: %s' % cluster_id
-        )
-        return resp
-
-    status = upgrades.pause_upgrade(cluster_id)
-    if status:
-        # TODO: pause failed, probably should update cluster upgrade status
-        resp = generate_response(
-            500,  # TODO probably should fix it later
-            'Failed to pause cluster upgrade for cluster %s with message %s'
-            % (cluster_id, status)
-        )
-        return resp
-
-    resp = jsonify(upgrade)
-    return resp
-
-
-@app.route('/upgrade-rollback/<cluster_id>', methods=['PUT'])
-def rollback_cluster_upgrade(cluster_id):
-    upgrade = db_api.rollback_cluster_upgrade(cluster_id)
-    if not upgrade:
-        resp = generate_response(
-            404,  # TODO probably should fix it later
-            'Failed to rollback cluster upgrade for cluster %s' % cluster_id
-        )
-        return resp
-
-    status = upgrades.rollback_upgrade(cluster_id)
-    if status:
-        # TODO: rollback failed, probably should update cluster upgrade status
-        resp = generate_response(
-            500,  # TODO probably should fix it later
-            'Failed to rollback cluster upgrade for cluster: %s '
-            'with message %s' % (cluster_id, status)
-        )
-        return resp
-
-    resp = jsonify(upgrade)
     return resp
 
 

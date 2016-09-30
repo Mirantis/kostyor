@@ -229,8 +229,11 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         }
         self.assertEqual(expected_error, error)
 
-    def _make_put_upgrade(self, action):
-        action_fn = mock.Mock(return_value=self.fake_upgrade)
+    def _make_put_upgrade(self, action, side_effect=None):
+        action_fn = mock.Mock(
+            return_value=self.fake_upgrade,
+            side_effect=side_effect)
+
         with mock.patch.dict(Upgrade._actions, {action: action_fn}):
             resp = self.app.put(
                 '/upgrades/d8e98946-5a46-4516-9447-d16deb1d878b',
@@ -240,47 +243,101 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
                     'action': action,
                 })
             )
-            self.assertEqual(200, resp.status_code)
-            action_fn.assert_called_once_with(
-                'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
-            return resp
+            return resp, action_fn
 
     def test_put_upgrade_cancel(self):
-        resp = self._make_put_upgrade('cancel')
+        resp, action_fn = self._make_put_upgrade('cancel')
+
+        self.assertEqual(200, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
 
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
+
+    def test_put_upgrade_cancel_cluster_not_found(self):
+        resp, action_fn = self._make_put_upgrade(
+            'cancel', exceptions.ClusterNotFound('cluster not found'))
+
+        self.assertEqual(404, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
+
+        received = json.loads(resp.get_data(as_text=True))
+        expected_error = {'message': 'cluster not found'}
+        self.assertEqual(expected_error, received)
 
     def test_put_upgrade_pause(self):
-        resp = self._make_put_upgrade('pause')
+        resp, action_fn = self._make_put_upgrade('pause')
+
+        self.assertEqual(200, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
 
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
+
+    def test_put_upgrade_pause_cluster_not_found(self):
+        resp, action_fn = self._make_put_upgrade(
+            'pause', exceptions.ClusterNotFound('cluster not found'))
+
+        self.assertEqual(404, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
+
+        received = json.loads(resp.get_data(as_text=True))
+        expected_error = {'message': 'cluster not found'}
+        self.assertEqual(expected_error, received)
 
     def test_put_upgrade_continue(self):
-        resp = self._make_put_upgrade('continue')
+        resp, action_fn = self._make_put_upgrade('continue')
+
+        self.assertEqual(200, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
 
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
+
+    def test_put_upgrade_continue_cluster_not_found(self):
+        resp, action_fn = self._make_put_upgrade(
+            'continue', exceptions.ClusterNotFound('cluster not found'))
+
+        self.assertEqual(404, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
+
+        received = json.loads(resp.get_data(as_text=True))
+        expected_error = {'message': 'cluster not found'}
+        self.assertEqual(expected_error, received)
 
     def test_put_upgrade_rollback(self):
-        resp = self._make_put_upgrade('rollback')
+        resp, action_fn = self._make_put_upgrade('rollback')
+
+        self.assertEqual(200, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
 
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
 
+    def test_put_upgrade_rollback_cluster_not_found(self):
+        resp, action_fn = self._make_put_upgrade(
+            'rollback', exceptions.ClusterNotFound('cluster not found'))
+
+        self.assertEqual(404, resp.status_code)
+        action_fn.assert_called_once_with(
+            'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161')
+
+        received = json.loads(resp.get_data(as_text=True))
+        expected_error = {'message': 'cluster not found'}
+        self.assertEqual(expected_error, received)
+
     def test_put_upgrade_unsupported(self):
-        action_fn = mock.Mock(return_value=self.fake_upgrade)
-        with mock.patch.dict(Upgrade._actions, {'unsupported': action_fn}):
-            resp = self.app.put(
-                '/upgrades/d8e98946-5a46-4516-9447-d16deb1d878b',
-                content_type='application/json',
-                data=json.dumps({
-                    'cluster_id': 'edac7d7c-cdfc-4fbe-b194-7b1ffdf21161',
-                    'action': 'unsupported',
-                })
-            )
-            self.assertEqual(400, resp.status_code)
+        resp, action_fn = self._make_put_upgrade('unsupported')
+
+        self.assertEqual(400, resp.status_code)
+        self.assertFalse(action_fn.called)
 
         received = json.loads(resp.get_data(as_text=True))
         error = {

@@ -91,22 +91,6 @@ def list_upgrade_versions():
     return jsonify(res)
 
 
-@app.route('/create-discovery-method', methods=['POST'])
-def create_discovery_method():
-    discovery_method = request.form.get('method')
-    disc_method = db_api.create_discovery_method(discovery_method)
-    if not disc_method:
-        resp = generate_response(
-            404,
-            'Failed to create discovery method: %s' % discovery_method
-        )
-        return resp
-
-    resp = jsonify(disc_method)
-    resp.status_code = 201
-    return resp
-
-
 @app.route('/discover-cluster', methods=['POST'])
 def discover_cluster():
     discovery_method = str(request.form.get('method')).lower()

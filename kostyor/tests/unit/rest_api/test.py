@@ -165,36 +165,6 @@ class KostyorRestAPITest(unittest.TestCase):
 
     @mock.patch.object(db_api, 'get_cluster', mock.Mock())
     @mock.patch.object(db_api, 'get_hosts_by_cluster', mock.Mock())
-    def test_host_list_cluster_exists_success(self):
-        fake_host_2 = {
-            'id': '2222',
-            'name': 'hostname_2',
-            'cluster_id': '1234'
-        }
-        fake_hosts = [self.fake_host, fake_host_2]
-        db_api.get_hosts_by_cluster.return_value = fake_hosts
-
-        res = self.app.get('/clusters/1234/hosts')
-
-        self.assertEqual(200, res.status_code)
-        hosts = res.get_json()
-        self.assertEqual(fake_hosts, hosts)
-        db_api.get_cluster.assert_called_once_with('1234')
-        db_api.get_hosts_by_cluster.assert_called_once_with('1234')
-
-    @mock.patch.object(db_api, 'get_cluster', mock.Mock())
-    @mock.patch.object(db_api, 'get_hosts_by_cluster', mock.Mock())
-    def test_host_list_wrong_cluster_id_404(self):
-        db_api.get_cluster.side_effect = Exception("Wrong cluster ID.")
-
-        res = self.app.get('/clusters/fake/hosts')
-
-        self.assertEqual(404, res.status_code)
-        db_api.get_cluster.assert_called_once_with('fake')
-        self.assertFalse(db_api.get_hosts_by_cluster.called)
-
-    @mock.patch.object(db_api, 'get_cluster', mock.Mock())
-    @mock.patch.object(db_api, 'get_hosts_by_cluster', mock.Mock())
     @mock.patch.object(db_api, 'get_services_by_host', mock.Mock())
     def test_service_list_cluster_exists_success(self):
         fake_hosts = [self.fake_host, ]

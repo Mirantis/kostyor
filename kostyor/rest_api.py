@@ -32,6 +32,7 @@ app.config['ERROR_404_HELP'] = False
 # some factory function to return Flask application.
 api.add_resource(resources.Clusters, '/clusters')
 api.add_resource(resources.Cluster, '/clusters/<cluster_id>')
+api.add_resource(resources.Hosts, '/clusters/<cluster_id>/hosts')
 
 api.add_resource(resources.Upgrades, '/upgrades')
 api.add_resource(resources.Upgrade, '/upgrades/<upgrade_id>')
@@ -166,18 +167,6 @@ def service_list(cluster_id):
         services += db_api.get_services_by_host(host['id'])
     services = sorted(services, key=lambda s: s['name'])
     resp = jsonify(services)
-    return resp
-
-
-@app.route('/clusters/<cluster_id>/hosts')
-def host_list(cluster_id):
-    try:
-        db_api.get_cluster(cluster_id)
-    except Exception as ex:
-        return generate_response(404, six.text_type(ex))
-
-    hosts = db_api.get_hosts_by_cluster(cluster_id)
-    resp = jsonify(hosts)
     return resp
 
 

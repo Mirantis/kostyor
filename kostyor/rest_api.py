@@ -33,6 +33,7 @@ app.config['ERROR_404_HELP'] = False
 api.add_resource(resources.Clusters, '/clusters')
 api.add_resource(resources.Cluster, '/clusters/<cluster_id>')
 api.add_resource(resources.Hosts, '/clusters/<cluster_id>/hosts')
+api.add_resource(resources.Services, '/clusters/<cluster_id>/services')
 
 api.add_resource(resources.Upgrades, '/upgrades')
 api.add_resource(resources.Upgrade, '/upgrades/<upgrade_id>')
@@ -151,22 +152,6 @@ def discover_cluster():
 
     resp = jsonify(new_cluster)
     resp.status_code = 201
-    return resp
-
-
-@app.route('/clusters/<cluster_id>/services')
-def service_list(cluster_id):
-    try:
-        db_api.get_cluster(cluster_id)
-    except Exception as e:
-        return generate_response(404, six.text_type(e))
-
-    hosts = db_api.get_hosts_by_cluster(cluster_id)
-    services = []
-    for host in hosts:
-        services += db_api.get_services_by_host(host['id'])
-    services = sorted(services, key=lambda s: s['name'])
-    resp = jsonify(services)
     return resp
 
 

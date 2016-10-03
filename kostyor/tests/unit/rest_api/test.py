@@ -6,7 +6,6 @@ from flask import wrappers
 from keystoneauth1 import exceptions
 import mock
 
-from kostyor.db import api as db_api
 from kostyor.rest_api import app
 from kostyor.common import constants
 sys.modules['kostyor.conf'] = mock.Mock()
@@ -162,43 +161,3 @@ class KostyorRestAPITest(unittest.TestCase):
                                               auth_url='http://9.9.9.9')
         fake_session.assert_called_once_with(auth=password_mock)
         fake_discover.assert_called_once_with()
-
-    @mock.patch.object(db_api, 'get_cluster', mock.Mock())
-    @mock.patch.object(db_api, 'get_hosts_by_cluster', mock.Mock())
-    @mock.patch.object(db_api, 'get_services_by_host', mock.Mock())
-    def test_service_list_cluster_exists_success(self):
-        fake_hosts = [self.fake_host, ]
-        fake_nova_api = {
-            'id': 'nova-api-3333',
-            'name': 'nova-api',
-            'host_id': '1111',
-            'version': constants.MITAKA
-        }
-        fake_keystone_api = fake_nova_api.copy()
-        fake_keystone_api['id'] = 'keystone-api-4444'
-        fake_keystone_api['name'] = 'keystone-api'
-        db_api.get_hosts_by_cluster.return_value = fake_hosts
-        db_api.get_services_by_host.return_value = [fake_nova_api,
-                                                    fake_keystone_api]
-
-        res = self.app.get('/clusters/1234/services')
-
-        self.assertEqual(200, res.status_code)
-        services = res.get_json()
-        self.assertEqual([fake_keystone_api, fake_nova_api], services)
-        db_api.get_cluster.assert_called_once_with('1234')
-        db_api.get_hosts_by_cluster.assert_called_once_with('1234')
-        db_api.get_services_by_host.assert_called_once_with('1111')
-
-    @mock.patch.object(db_api, 'get_cluster', mock.Mock())
-    @mock.patch.object(db_api, 'get_hosts_by_cluster', mock.Mock())
-    @mock.patch.object(db_api, 'get_services_by_host', mock.Mock())
-    def test_service_list_wrong_cluster_id_404(self):
-        db_api.get_cluster.side_effect = Exception("Wrong cluster ID.")
-
-        res = self.app.get('/clusters/fake/services')
-
-        self.assertEqual(404, res.status_code)
-        db_api.get_cluster.assert_called_once_with('fake')
-        self.assertFalse(db_api.get_hosts_by_cluster.called)
-        self.assertFalse(db_api.get_services_by_host.called)

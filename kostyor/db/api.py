@@ -153,8 +153,10 @@ def create_host(name, cluster_id):
 
 
 def get_hosts_by_cluster(cluster_id):
-    hosts = db_session.query(models.Host).filter_by(
-        cluster_id=cluster_id)
+    # ensure cluster exists and throw ClusterNotFound if not
+    cluster = _get_cluster(cluster_id)
+
+    hosts = db_session.query(models.Host).filter_by(cluster_id=cluster.id)
     return [host.to_dict() for host in hosts]
 
 

@@ -60,10 +60,6 @@ def get_upgrade_versions(cluster_id):
     return {'versions': constants.OPENSTACK_VERSIONS}
 
 
-def create_discovery_method(method):
-    return {'id': '1', 'method': method}
-
-
 def create_cluster_upgrade(cluster_id, to_version):
     cluster = _get_cluster(cluster_id)
 

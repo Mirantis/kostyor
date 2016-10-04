@@ -68,22 +68,6 @@ class KostyorRestAPITest(unittest.TestCase):
         received = res.get_json()
         self.assertEqual(['mitaka', 'newton'], received)
 
-    @mock.patch('kostyor.db.api.create_discovery_method')
-    def test_create_disc_method_404(self, fake_db_create_disc_method):
-        fake_db_create_disc_method.return_value = None
-        res = self.app.post('/create-discovery-method')
-        self.assertEqual(404, res.status_code)
-
-    @mock.patch('kostyor.db.api.create_discovery_method')
-    def test_create_disc_method(self, fake_db_create_disc_method):
-        expected = {'id': '1', 'method': 'method'}
-
-        fake_db_create_disc_method.return_value = expected
-        res = self.app.post('/create-discovery-method')
-        self.assertEqual(201, res.status_code)
-        received = res.get_json()
-        self.assertEqual(expected, received)
-
     @mock.patch('keystoneauth1.identity.v2.Password')
     @mock.patch('keystoneauth1.session.Session')
     @mock.patch(

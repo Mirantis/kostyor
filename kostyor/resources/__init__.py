@@ -1,7 +1,7 @@
-from .clusters import Clusters, Cluster
-from .hosts import Hosts
-from .services import Services
-from .upgrades import Upgrades, Upgrade
+from kostyor.resources.clusters import Clusters, Cluster
+from kostyor.resources.hosts import Hosts
+from kostyor.resources.services import Services
+from kostyor.resources.upgrades import Upgrades, Upgrade
 
 
 __all__ = [

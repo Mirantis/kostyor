@@ -4,6 +4,7 @@ import datetime
 from kostyor.db import models
 from kostyor.db import api as db_api
 
+import mock
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
@@ -28,8 +29,11 @@ class DbApiTestCase(base.BaseTestCase):
     def setUp(self):
         super(DbApiTestCase, self).setUp()
         self.context = KostyorTestContext()
-        db_api.db_session = self.context.session
-        db_api.engine = self.context.engine
+
+        patcher = mock.patch.object(db_api, 'db_session', self.context.session)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
         models.Base.metadata.create_all(self.context.engine)
         self.cluster = db_api.create_cluster("test",
                                              constants.MITAKA,

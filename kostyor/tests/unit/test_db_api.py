@@ -108,6 +108,11 @@ class DbApiTestCase(base.BaseTestCase):
         result = db_api.get_services_by_host('fake-host-id')
         self.assertEqual([], result)
 
+    def test_get_upgrade_raises_exception(self):
+        self.assertRaises(exceptions.UpgradeNotFound,
+                          db_api.get_upgrade_by_cluster,
+                          'does-not-exist')
+
     def test_get_upgrades(self):
         expected = [
             {

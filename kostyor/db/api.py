@@ -44,7 +44,11 @@ def get_cluster(cluster_id):
 
 def get_upgrade_by_cluster(cluster_id):
     u_task = _get_most_recent_upgrade_task(cluster_id)
-    return u_task.to_dict()
+    if u_task:
+        return u_task.to_dict()
+    else:
+        raise exceptions.UpgradeNotFound("No upgrade found for Cluster ID %s"
+                                         % cluster_id)
 
 
 def get_upgrade(upgrade_id):

@@ -11,6 +11,7 @@ from keystoneauth1.identity import v2
 import six
 
 from kostyor.common import constants
+from kostyor.common import exceptions as k_exceptions
 from kostyor import conf
 from kostyor.inventory import discover
 from kostyor import resources
@@ -53,12 +54,12 @@ def generate_response(status, message):
 
 @app.route('/upgrade-status/<cluster_id>')
 def get_upgrade_status(cluster_id):
-    upgrade = db_api.get_upgrade_by_cluster(cluster_id)
-    if upgrade:
+    try:
+        upgrade = db_api.get_upgrade_by_cluster(cluster_id)
         full_url = url_for(
             '.upgrade', cluster_id=cluster_id, upgrade_id=upgrade['id'])
         return redirect(full_url)
-    else:
+    except k_exceptions.UpgradeNotFound:
         return generate_response(404, 'Upgrade for cluster %s not found' %
                                  cluster_id)
 

@@ -24,3 +24,7 @@ class CannotUpgradeToLowerVersion(BadRequest):
 
 class UpgradeIsInProgress(BadRequest):
     """Upgrade operation is in progress."""
+
+
+class UpgradeNotFound(Exception):
+    """Upgrade not found in database"""

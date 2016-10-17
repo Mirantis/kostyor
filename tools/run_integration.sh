@@ -21,7 +21,10 @@ cd /tmp/Kostyor-cli
 
 python /tmp/Kostyor-cli/setup.py install
 
-python $KOSTYOR_DIR/tools/create_database.py
+# Use Alembic to build up the database
+alembic -c $KOSTYOR_DIR/kostyor/db/migrations/alembic.ini upgrade head
+
+python $KOSTYOR_DIR/tools/create_initial_data.py
 
 # Start the REST API
 

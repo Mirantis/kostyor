@@ -3,14 +3,13 @@ import sys
 
 from collections import defaultdict
 
-from flask import Flask, jsonify, redirect, request, url_for
+from flask import Flask, jsonify, request
 from flask_restful import Api
 import six
 from stevedore import driver
 from stevedore import extension
 
 from kostyor.common import constants
-from kostyor.common import exceptions as k_exceptions
 from kostyor import conf
 from kostyor import resources
 
@@ -54,18 +53,6 @@ def discovery_drivers():
     ext_manager = extension.ExtensionManager(
         namespace='kostyor.discovery_drivers')
     return ext_manager.names()
-
-
-@app.route('/upgrade-status/<cluster_id>')
-def get_upgrade_status(cluster_id):
-    try:
-        upgrade = db_api.get_upgrade_by_cluster(cluster_id)
-        full_url = url_for(
-            '.upgrade', cluster_id=cluster_id, upgrade_id=upgrade['id'])
-        return redirect(full_url)
-    except k_exceptions.UpgradeNotFound:
-        return generate_response(404, 'Upgrade for cluster %s not found' %
-                                 cluster_id)
 
 
 @app.route('/discovery-methods')

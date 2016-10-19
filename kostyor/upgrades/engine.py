@@ -1,6 +1,7 @@
 import collections
 
 from kostyor.db import api as dbapi
+from kostyor.upgrades import driver as upgrade_driver
 
 
 Project = collections.namedtuple('Project', ['name', 'services'])
@@ -137,10 +138,9 @@ class Engine(object):
     :param upgrade: an upgrade task to proceed with
     """
 
-    def __init__(self, upgrade):
+    def __init__(self, upgrade, driver=upgrade_driver.NoOpDriver()):
         self._upgrade = upgrade
-        # TODO: retrieve driver from upgrade instance
-        self.driver = None
+        self.driver = driver
 
     def start(self):
         subtasks = []
@@ -152,17 +152,21 @@ class Engine(object):
         # keystone, then with nova, and so on. See iteration details in
         # get_controllers() docstring.
         for host in get_controllers(hosts):
+            self.driver.pre_host_upgrade_hook(host)
             for service in iterservices(host):
+                self.driver.pre_service_upgrade_hook(service)
                 subtasks.append(self.driver.start_upgrade(service))
 
         # Well, controllers are done. It's time to upgrade compute nodes.
         # Again, node by node, service by service.
         for host in get_computes(hosts):
+            self.driver.pre_host_upgrade_hook(host)
             for service in iterservices(host):
                 subtasks.append(self.driver.start_upgrade(service))
 
         # Finishing upgrades by upgrading storage nodes.
         for host in get_storages(hosts):
+            self.driver.pre_host_upgrade_hook(host)
             for service in iterservices(host):
                 subtasks.append(self.driver.start_upgrade(service))
 

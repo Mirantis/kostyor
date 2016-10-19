@@ -1,8 +1,6 @@
 import copy
 import sys
 
-from collections import defaultdict
-
 from flask import Flask, jsonify, request
 from flask_restful import Api
 import six
@@ -28,6 +26,7 @@ app.config['ERROR_404_HELP'] = False
 # New API endpoints should be implemented via Flask-RESTful and added here.
 # Once old ones are reimplemented - we can get rid of them and even provide
 # some factory function to return Flask application.
+api.add_resource(resources.Discover, '/clusters/discover')
 api.add_resource(resources.Clusters, '/clusters')
 api.add_resource(resources.Cluster, '/clusters/<cluster_id>')
 api.add_resource(resources.Hosts, '/clusters/<cluster_id>/hosts')
@@ -104,19 +103,15 @@ def discover_cluster():
             )
             return resp
 
-        new_cluster = db_api.create_cluster(request.form.get('cluster_name'),
-                                            constants.UNKNOWN,
-                                            constants.NOT_READY_FOR_UPGRADE)
-        host_service_map = defaultdict(list)
-        for s in services:
-            host_service_map[s[0]].append(s[1])
-        hosts_ids = {}
-        for host in host_service_map:
-            hosts_ids[host] = db_api.create_host(host, new_cluster['id'])['id']
-        for host, service in six.iteritems(host_service_map):
-            for s in service:
-                db_api.create_service(s, hosts_ids[host],
-                                      constants.UNKNOWN)
+        # Reuse creation method from flask-restful in order to follow DRY
+        # principle. Anyway, this code will be removed once appropriate
+        # patch is merged to Kostyor-cli.
+        from kostyor.resources.discover import _create_cluster
+        new_cluster = _create_cluster(
+            request.form.get('cluster_name'),
+            {
+                'services': services,
+            })
     else:
         resp = generate_response(
             404,

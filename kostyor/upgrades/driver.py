@@ -105,7 +105,7 @@ class UpgradeDriver():
         pass
 
 
-class FakeUpgradeDriver(UpgradeDriver):
+class NoOpDriver(UpgradeDriver):
 
     def stop_upgrade(self, upgrade_task):
         return tasks.noop.si()

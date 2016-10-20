@@ -1,5 +1,7 @@
 import collections
 
+import celery
+
 from kostyor.db import api as dbapi
 
 
@@ -166,7 +168,11 @@ class Engine(object):
             for service in iterservices(host):
                 subtasks.append(self.driver.start_upgrade(service))
 
-        # Depends-On: https://github.com/sc68cal/Kostyor/pull/65
-        #
-        # supertask = celery.chain(*subtasks)
-        # supertask.apply_async()
+        # Execute gathered tasks one-by-one preserving order. Please note,
+        # that it doesn't mean there can't be parallel execution since driver
+        # may return a Celery group of tasks instead, and in that case the
+        # group will be executed instead. The idea is to run one-by-one what
+        # was returned by driver regardless whether it's a task, a group or
+        # a chain.
+        supertask = celery.chain(*subtasks)
+        supertask.apply_async()

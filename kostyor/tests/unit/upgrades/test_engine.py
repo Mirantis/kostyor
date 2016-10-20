@@ -4,7 +4,19 @@ import mock
 import oslotest.base
 
 from kostyor.common import constants
-from kostyor.upgrades import Engine
+from kostyor.rpc import tasks
+from kostyor.upgrades import Engine, UpgradeDriver
+
+
+class MockUpgradeDriver(UpgradeDriver):
+
+    supports_upgrade_rollback = mock.Mock(return_value=False)
+    stop_upgrade = mock.Mock(return_value=tasks.noop.si())
+    start_upgrade = mock.Mock(return_value=tasks.noop.si())
+    pause_upgrade = mock.Mock(return_value=tasks.noop.si())
+    cancel_upgrade = mock.Mock(return_value=tasks.noop.si())
+    rollback_upgrade = mock.Mock(return_value=tasks.noop.si())
+    continue_upgrade = mock.Mock(return_value=tasks.noop.si())
 
 
 class TestEngine(oslotest.base.BaseTestCase):
@@ -135,7 +147,7 @@ class TestEngine(oslotest.base.BaseTestCase):
         def get_services_by_host(host):
             return services[host]
         self.dbapi.get_services_by_host = get_services_by_host
-        self.engine.driver = mock.Mock()
+        self.engine.driver = MockUpgradeDriver()
 
         self.engine.start()
 

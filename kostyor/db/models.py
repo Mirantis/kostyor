@@ -65,7 +65,7 @@ class UpgradeTask(Base, KostyorModelMixin):
     to_version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
     upgrade_start_time = sa.Column(sa.DateTime)
     upgrade_end_time = sa.Column(sa.DateTime)
-    status = sa.Column(sa.Enum(*constants.STATUSES))
+    status = sa.Column(sa.Enum(*constants.UPGRADE_STATUSES))
 
 
 class ServiceUpgradeRecord(Base, KostyorModelMixin):

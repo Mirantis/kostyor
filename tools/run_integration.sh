@@ -44,4 +44,25 @@ kostyor list-upgrade-versions
 
 kostyor list-discovery-methods
 
+kostyor check-upgrade $CLUSTER_ID
+
+VERSION_TO_UPGRADE=$(kostyor check-upgrade -f value \
+    -c 'Available Upgrade Versions' $CLUSTER_ID | head -n 1)
+
+if ! [ -z $VERSION_TO_UPGRADE ]; then
+
+    kostyor upgrade-start $CLUSTER_ID ${VERSION_TO_UPGRADE,,}
+
+    kostyor upgrade-list --cluster $CLUSTER_ID
+
+    UPGRADE_ID=$(kostyor upgrade-list -f value -c 'UUID' | tail -n 1)
+
+    kostyor upgrade-show $UPGRADE_ID
+
+fi
+
+kostyor host-list $CLUSTER_ID
+
+kostyor service-list $CLUSTER_ID
+
 pkill -f 'python kostyor/rest_api.py'

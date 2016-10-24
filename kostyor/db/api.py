@@ -151,9 +151,7 @@ def create_host(name, cluster_id):
     new_host.cluster_id = cluster_id
     db_session.add(new_host)
     db_session.commit()
-    return {'id': new_host.id,
-            'hostname': new_host.hostname,
-            'cluster_id': new_host.cluster_id}
+    return new_host.to_dict()
 
 
 def get_hosts_by_cluster(cluster_id):
@@ -171,10 +169,7 @@ def create_service(name, host_id, version):
     new_service.version = version
     db_session.add(new_service)
     db_session.commit()
-    return {'id': new_service.id,
-            'name': new_service.name,
-            'host_id': new_service.host_id,
-            'version': new_service.version}
+    return new_service.to_dict()
 
 
 def get_services_by_host(host_id):
@@ -188,10 +183,7 @@ def create_cluster(name, version, status):
     cluster = models.Cluster(**kwargs)
     db_session.add(cluster)
     db_session.commit()
-    return {'id': cluster.id,
-            'name': cluster.name,
-            'version': cluster.version,
-            'status': cluster.status}
+    return cluster.to_dict()
 
 
 def update_cluster(cluster_id, **kwargs):

@@ -154,23 +154,73 @@ class Engine(object):
         # keystone, then with nova, and so on. See iteration details in
         # get_controllers() docstring.
         for host in get_controllers(hosts):
-            self.driver.pre_host_upgrade_hook(host)
+            subtasks.append(
+                self.driver.pre_host_upgrade_hook(self._upgrade, host)
+            )
+
             for service in iterservices(host):
-                self.driver.pre_service_upgrade_hook(service)
-                subtasks.append(self.driver.start_upgrade(service))
+                subtasks.extend([
+                    self.driver.pre_service_upgrade_hook(
+                        self._upgrade, service
+                    ),
+                    self.driver.start_upgrade(
+                        self._upgrade, service
+                    ),
+                    self.driver.post_service_upgrade_hook(
+                        self._upgrade, service
+                    ),
+                ])
+
+            subtasks.append(
+                self.driver.post_host_upgrade_hook(self._upgrade, host)
+            )
 
         # Well, controllers are done. It's time to upgrade compute nodes.
         # Again, node by node, service by service.
         for host in get_computes(hosts):
-            self.driver.pre_host_upgrade_hook(host)
+            subtasks.append(
+                self.driver.pre_host_upgrade_hook(self._upgrade, host)
+            )
+
             for service in iterservices(host):
-                subtasks.append(self.driver.start_upgrade(service))
+                subtasks.extend([
+                    self.driver.pre_service_upgrade_hook(
+                        self._upgrade, service
+                    ),
+                    self.driver.start_upgrade(
+                        self._upgrade, service
+                    ),
+                    self.driver.post_service_upgrade_hook(
+                        self._upgrade, service
+                    ),
+                ])
+
+            subtasks.append(
+                self.driver.post_host_upgrade_hook(self._upgrade, host)
+            )
 
         # Finishing upgrades by upgrading storage nodes.
         for host in get_storages(hosts):
-            self.driver.pre_host_upgrade_hook(host)
+            subtasks.append(
+                self.driver.pre_host_upgrade_hook(self._upgrade, host)
+            )
+
             for service in iterservices(host):
-                subtasks.append(self.driver.start_upgrade(service))
+                subtasks.extend([
+                    self.driver.pre_service_upgrade_hook(
+                        self._upgrade, service
+                    ),
+                    self.driver.start_upgrade(
+                        self._upgrade, service
+                    ),
+                    self.driver.post_service_upgrade_hook(
+                        self._upgrade, service
+                    ),
+                ])
+
+            subtasks.append(
+                self.driver.post_host_upgrade_hook(self._upgrade, host)
+            )
 
         # Execute gathered tasks one-by-one preserving order. Please note,
         # that it doesn't mean there can't be parallel execution since driver

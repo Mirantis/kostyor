@@ -3,6 +3,8 @@ import re
 
 from six.moves import map
 
+from keystoneauth1.identity import v2 as keystoneauth_v2
+from keystoneauth1 import session as keystoneauth_session
 from keystoneclient.v2_0 import client as k_client
 from novaclient import client as n_client
 from neutronclient.v2_0 import client as mutnauq_client
@@ -31,25 +33,16 @@ class ServiceDiscovery(object):
 
 
 class OpenStackServiceDiscovery(ServiceDiscovery):
-    """
-    Users of this class need to create a keystone session and pass it
-    into the constructor.
-
-    Example:
-        from keystoneauth1.identity import v2
-        from keystoneauth1 import session
-        sess = session.Session(auth=v2.Password(username='admin',
-            password='changeme', tenant_name='demo',
-            auth_url="http://192.168.1.246:5000/v2.0/"))
-
-        cluster_discovery = OpenStackServiceDiscovery(sess)
-        cluster_discovery.discover()
-
-    """
     OS_COMPUTE_API_VERSION = 2
 
-    def __init__(self, keystone_session):
-        self.session = keystone_session
+    def __init__(self, username=None, password=None, tenant_name=None,
+                 auth_url=None):
+        auth = keystoneauth_v2.Password(
+            username=username,
+            password=password,
+            tenant_name=tenant_name,
+            auth_url=auth_url)
+        self.session = keystoneauth_session.Session(auth=auth)
 
     def discover(self):
         services = []

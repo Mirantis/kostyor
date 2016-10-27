@@ -28,7 +28,3 @@ UPGRADE_STATUSES = [UPGRADE_IN_PROGRESS,
                     UPGRADE_CANCELLED,
                     UPGRADE_ROLLBACK,
                     UPGRADE_SUCCEED]
-
-OPENSTACK = 'openstack'
-
-DISCOVERY_METHODS = [OPENSTACK]

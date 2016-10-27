@@ -6,6 +6,7 @@ from flask import wrappers
 from keystoneauth1 import exceptions
 import mock
 
+from kostyor.inventory import discover
 from kostyor.rest_api import app
 from kostyor.common import constants
 from kostyor.common import exceptions as k_exceptions
@@ -40,6 +41,12 @@ class KostyorRestAPITest(unittest.TestCase):
             'name': 'hostname_1',
             'cluster_id': '1234'
         }
+        self.driver_init_kwargs = {
+            'username': 'admin',
+            'password': 'qwerty',
+            'tenant_name': 'admin',
+            'auth_url': 'http://9.9.9.9'
+        }
 
     @mock.patch('kostyor.db.api.get_upgrade_by_cluster')
     def test_get_upgrade_status_404(self, fake_db_get_upgrade):
@@ -47,18 +54,16 @@ class KostyorRestAPITest(unittest.TestCase):
         res = self.app.get('/upgrade-status/{}'.format(self.cluster_id))
         self.assertEqual(404, res.status_code)
 
-    @mock.patch('kostyor.db.api.get_discovery_methods')
-    def test_get_discovery_methods_default_only(
+    @mock.patch('kostyor.rest_api.discovery_drivers')
+    def test_get_discovery_methods(
             self,
-            fake_conf_get_discovery_methods):
+            fake_discovery_drivers):
         methods = ['method1', 'method2']
-        fake_conf_get_discovery_methods.return_value = methods
+        fake_discovery_drivers.return_value = methods
         res = self.app.get('/discovery-methods')
         self.assertEqual(200, res.status_code)
-        data = res.get_json()
-        received = data.get('items')
-        expected = [{'method': method} for method in methods]
-        self.assertEqual(expected, received)
+        received = res.get_json()
+        self.assertEqual(methods, received)
 
     @mock.patch('kostyor.db.api.get_cluster')
     def test_get_upgrade_versions(self, fake_db_get_cluster):
@@ -68,23 +73,17 @@ class KostyorRestAPITest(unittest.TestCase):
         received = res.get_json()
         self.assertEqual(['mitaka', 'newton'], received)
 
-    @mock.patch('keystoneauth1.identity.v2.Password')
-    @mock.patch('keystoneauth1.session.Session')
-    @mock.patch(
-        'kostyor.inventory.discover.OpenStackServiceDiscovery.discover')
+    @mock.patch('stevedore.driver.DriverManager')
+    @mock.patch('kostyor.rest_api.discovery_drivers')
     @mock.patch('kostyor.db.api.create_cluster')
     @mock.patch('kostyor.db.api.create_host')
     @mock.patch('kostyor.db.api.create_service')
-    def test_discover_cluster_openstack_method_success(self,
+    def test_discover_cluster_supported_method_success(self,
                                                        fake_create_service,
                                                        fake_create_host,
                                                        fake_create_cluster,
-                                                       fake_discover,
-                                                       fake_session,
-                                                       fake_password):
-        password_mock = mock.Mock()
-        fake_password.return_value = password_mock
-        fake_discover.return_value = [('1.2.3.4', 'nova-api'), ]
+                                                       fake_discovery_drivers,
+                                                       fake_driver_manager):
         cluster = {
             'id': 'cluster-id',
             'name': 'test-cluster',
@@ -97,18 +96,25 @@ class KostyorRestAPITest(unittest.TestCase):
             'name': '1.2.3.4',
             'cluster_id': 'cluster-id',
         }
+        fake_discovery_drivers.return_value = ['openstack', ]
+        driver = discover.OpenStackServiceDiscovery()
+        driver.discover = mock.Mock(return_value=[('1.2.3.4', 'nova-api'), ])
+        fake_driver_manager.return_value.driver = driver
 
         res = self.app.post('/discover-cluster',
                             data=self.discover_cluster_request_data)
+
         self.assertEqual(201, res.status_code)
         data = res.get_json()
         self.assertEqual(cluster, data)
-        fake_password.assert_called_once_with(username='admin',
-                                              password='qwerty',
-                                              tenant_name='admin',
-                                              auth_url='http://9.9.9.9')
-        fake_session.assert_called_once_with(auth=password_mock)
-        fake_discover.assert_called_once_with()
+
+        fake_discovery_drivers.assert_called_once_with()
+        fake_driver_manager.assert_called_once_with(
+            namespace='kostyor.discovery_drivers',
+            name='openstack',
+            invoke_on_load=True,
+            invoke_kwds=self.driver_init_kwargs)
+        driver.discover.assert_called_once_with()
         fake_create_cluster.assert_called_once_with(
             'test-cluster',
             constants.UNKNOWN,
@@ -124,25 +130,26 @@ class KostyorRestAPITest(unittest.TestCase):
                             data={'method': 'unsupported'})
         self.assertEqual(404, res.status_code)
 
-    @mock.patch('keystoneauth1.identity.v2.Password')
-    @mock.patch('keystoneauth1.session.Session')
-    @mock.patch(
-        'kostyor.inventory.discover.OpenStackServiceDiscovery.discover')
-    def test_discover_cluster_discovery_failed_error_response(self,
-                                                              fake_discover,
-                                                              fake_session,
-                                                              fake_password):
-        password_mock = mock.Mock()
-        fake_password.return_value = password_mock
-        fake_discover.side_effect = exceptions.Unauthorized()
+    @mock.patch('stevedore.driver.DriverManager')
+    @mock.patch('kostyor.rest_api.discovery_drivers')
+    def test_discover_cluster_discovery_failed_error_response(
+            self,
+            fake_discovery_drivers,
+            fake_driver_manager):
+        fake_discovery_drivers.return_value = ['openstack', ]
+        driver = discover.OpenStackServiceDiscovery()
+        driver.discover = mock.Mock(side_effect=exceptions.Unauthorized())
+        fake_driver_manager.return_value.driver = driver
 
         res = self.app.post('/discover-cluster',
                             data=self.discover_cluster_request_data)
 
         self.assertEqual(401, res.status_code)
-        fake_password.assert_called_once_with(username='admin',
-                                              password='qwerty',
-                                              tenant_name='admin',
-                                              auth_url='http://9.9.9.9')
-        fake_session.assert_called_once_with(auth=password_mock)
-        fake_discover.assert_called_once_with()
+
+        fake_discovery_drivers.assert_called_once_with()
+        fake_driver_manager.assert_called_once_with(
+            namespace='kostyor.discovery_drivers',
+            name='openstack',
+            invoke_on_load=True,
+            invoke_kwds=self.driver_init_kwargs)
+        driver.discover.assert_called_once_with()

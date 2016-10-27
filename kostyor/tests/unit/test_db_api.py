@@ -76,11 +76,6 @@ class DbApiTestCase(base.BaseTestCase):
 
         self.assertEqual(update['name'], result['name'])
 
-    def test_discovery_methods(self):
-        methods = db_api.get_discovery_methods()
-        # we don't care about ordering here, so let's compare sorted arrays
-        self.assertEqual(sorted(methods), sorted([constants.OPENSTACK]))
-
     def test_get_hosts_by_cluster_existing_cluster_success(self):
         host = db_api.create_host('hostname', self.cluster['id'])
         expected_result = [{'id': host['id'],

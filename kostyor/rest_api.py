@@ -5,15 +5,13 @@ from collections import defaultdict
 
 from flask import Flask, jsonify, redirect, request, url_for
 from flask_restful import Api
-from keystoneauth1 import exceptions
-from keystoneauth1 import session
-from keystoneauth1.identity import v2
 import six
+from stevedore import driver
+from stevedore import extension
 
 from kostyor.common import constants
 from kostyor.common import exceptions as k_exceptions
 from kostyor import conf
-from kostyor.inventory import discover
 from kostyor import resources
 
 from kostyor.db import api as db_api
@@ -52,6 +50,12 @@ def generate_response(status, message):
     return resp
 
 
+def discovery_drivers():
+    ext_manager = extension.ExtensionManager(
+        namespace='kostyor.discovery_drivers')
+    return ext_manager.names()
+
+
 @app.route('/upgrade-status/<cluster_id>')
 def get_upgrade_status(cluster_id):
     try:
@@ -66,11 +70,7 @@ def get_upgrade_status(cluster_id):
 
 @app.route('/discovery-methods')
 def get_discovery_methods():
-    methods = db_api.get_discovery_methods()
-    items = [{'method': method} for method in methods]
-    disc_methods = {'items': items}
-
-    resp = jsonify(disc_methods)
+    resp = jsonify(discovery_drivers())
     return resp
 
 
@@ -97,20 +97,23 @@ def list_upgrade_versions():
 @app.route('/discover-cluster', methods=['POST'])
 def discover_cluster():
     discovery_method = str(request.form.get('method')).lower()
+    if discovery_method in discovery_drivers():
+        discovery_args = {}
+        for key in request.form:
+            if key not in ['method', 'cluster_name']:
+                discovery_args[key] = request.form.get(key, None)
 
-    # At this point only OpenStack-based discovery is implemented.
-    if discovery_method == constants.OPENSTACK:
-        sess = session.Session(auth=v2.Password(
-            username=request.form.get('username'),
-            password=request.form.get('password'),
-            tenant_name=request.form.get('tenant_name'),
-            auth_url=request.form.get('auth_url')))
-        cluster_discovery = discover.OpenStackServiceDiscovery(sess)
+        discovery_driver = driver.DriverManager(
+            namespace='kostyor.discovery_drivers',
+            name=discovery_method,
+            invoke_on_load=True,
+            invoke_kwds=discovery_args,
+        ).driver
         try:
-            services = cluster_discovery.discover()
-        except exceptions.ClientException as e:
+            services = discovery_driver.discover()
+        except Exception as e:
             resp = generate_response(
-                e.http_status,
+                getattr(e, 'http_status', 404),
                 e.message
             )
             return resp

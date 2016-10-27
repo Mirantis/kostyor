@@ -10,7 +10,7 @@ connection_opt = cfg.StrOpt('connection', default='sqlite:////tmp/kostyor.db',
 upgrade_group = cfg.OptGroup(name='upgrades',
                              title="Upgrade settings")
 
-upgrade_driver = cfg.StrOpt('driver', default="fake")
+upgrade_driver = cfg.StrOpt('driver', default="noop")
 
 
 CONF.register_group(database_group)

@@ -153,3 +153,23 @@ class KostyorRestAPITest(unittest.TestCase):
             invoke_on_load=True,
             invoke_kwds=self.driver_init_kwargs)
         driver.discover.assert_called_once_with()
+
+    @mock.patch('stevedore.driver.DriverManager')
+    @mock.patch('kostyor.rest_api.discovery_drivers')
+    def test_discover_cluster_driver_load_failed_error_response(
+            self,
+            fake_discovery_drivers,
+            fake_driver_manager):
+        fake_discovery_drivers.return_value = ['openstack', ]
+        fake_driver_manager.side_effect = Exception("Cannot load driver.")
+
+        res = self.app.post('/discover-cluster',
+                            data=self.discover_cluster_request_data)
+
+        self.assertEqual(404, res.status_code)
+        fake_discovery_drivers.assert_called_once_with()
+        fake_driver_manager.assert_called_once_with(
+            namespace='kostyor.discovery_drivers',
+            name='openstack',
+            invoke_on_load=True,
+            invoke_kwds=self.driver_init_kwargs)

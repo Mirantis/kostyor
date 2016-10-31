@@ -102,19 +102,18 @@ def discover_cluster():
         for key in request.form:
             if key not in ['method', 'cluster_name']:
                 discovery_args[key] = request.form.get(key, None)
-
-        discovery_driver = driver.DriverManager(
-            namespace='kostyor.discovery_drivers',
-            name=discovery_method,
-            invoke_on_load=True,
-            invoke_kwds=discovery_args,
-        ).driver
         try:
+            discovery_driver = driver.DriverManager(
+                namespace='kostyor.discovery_drivers',
+                name=discovery_method,
+                invoke_on_load=True,
+                invoke_kwds=discovery_args,
+            ).driver
             services = discovery_driver.discover()
         except Exception as e:
             resp = generate_response(
                 getattr(e, 'http_status', 404),
-                e.message
+                six.text_type(e)
             )
             return resp
 

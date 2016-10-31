@@ -9,7 +9,6 @@ import mock
 from kostyor.inventory import discover
 from kostyor.rest_api import app
 from kostyor.common import constants
-from kostyor.common import exceptions as k_exceptions
 sys.modules['kostyor.conf'] = mock.Mock()
 
 
@@ -47,12 +46,6 @@ class KostyorRestAPITest(unittest.TestCase):
             'tenant_name': 'admin',
             'auth_url': 'http://9.9.9.9'
         }
-
-    @mock.patch('kostyor.db.api.get_upgrade_by_cluster')
-    def test_get_upgrade_status_404(self, fake_db_get_upgrade):
-        fake_db_get_upgrade.side_effect = k_exceptions.UpgradeNotFound
-        res = self.app.get('/upgrade-status/{}'.format(self.cluster_id))
-        self.assertEqual(404, res.status_code)
 
     @mock.patch('kostyor.rest_api.discovery_drivers')
     def test_get_discovery_methods(

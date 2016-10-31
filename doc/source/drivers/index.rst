@@ -3,5 +3,5 @@ Kostyor Upgrade Drivers
 
 
 .. toctree::
-   ansible_driver.rst
+   ansible_driver
    fuel-ccp

@@ -3,7 +3,7 @@ import collections
 import celery
 
 from kostyor.db import api as dbapi
-from kostyor.upgrades import driver as upgrade_driver
+from kostyor.upgrades.drivers import noop as noop_driver
 
 
 Project = collections.namedtuple('Project', ['name', 'services'])
@@ -140,7 +140,7 @@ class Engine(object):
     :param upgrade: an upgrade task to proceed with
     """
 
-    def __init__(self, upgrade, driver=upgrade_driver.NoOpDriver()):
+    def __init__(self, upgrade, driver=noop_driver.NoOpDriver()):
         self._upgrade = upgrade
         self.driver = driver
 

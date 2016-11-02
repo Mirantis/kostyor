@@ -126,27 +126,3 @@ class UpgradeDriver():
         :type upgrade_task: kostyor.db.models.UpgradeTask instance
         """
         pass
-
-
-class NoOpDriver(UpgradeDriver):
-
-    def stop_upgrade(self, upgrade_task, service):
-        return tasks.noop.si()
-
-    def start_upgrade(self, upgrade_task, service):
-        return tasks.noop.si()
-
-    def pause_upgrade(self, upgrade_task, service):
-        return tasks.noop.si()
-
-    def cancel_upgrade(self, upgrade_task, service):
-        return tasks.noop.si()
-
-    def rollback_upgrade(self, upgrade_task, service):
-        return tasks.noop.si()
-
-    def continue_upgrade(self, upgrade_task, service):
-        return tasks.noop.si()
-
-    def supports_upgrade_rollback(self):
-        return False

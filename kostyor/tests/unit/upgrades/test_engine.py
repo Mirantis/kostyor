@@ -5,7 +5,8 @@ import oslotest.base
 
 from kostyor.common import constants
 from kostyor.rpc import tasks
-from kostyor.upgrades import Engine, UpgradeDriver
+from kostyor.upgrades import Engine
+from kostyor.upgrades.drivers.base import UpgradeDriver
 
 
 class MockUpgradeDriver(UpgradeDriver):

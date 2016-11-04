@@ -74,9 +74,10 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         received = json.loads(resp.get_data(as_text=True))
         self.assertEqual({'message': 'Upgrade 123 not found.'}, received)
 
+    @mock.patch('kostyor.upgrades.Engine')
     @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    def test_post_upgrades(self, fake_create_upgrade, _):
+    def test_post_upgrades(self, fake_create_upgrade, _, fake_engine):
         fake_create_upgrade.return_value = self.fake_upgrade
 
         resp = self.app.post(
@@ -85,6 +86,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             data=json.dumps({
                 'cluster_id': self.fake_upgrade['cluster_id'],
                 'to_version': constants.NEWTON,
+                'driver': 'noop',
             })
         )
         self.assertEqual(201, resp.status_code)
@@ -96,6 +98,11 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             self.fake_upgrade['cluster_id'],
             constants.NEWTON,
         )
+        fake_engine.assert_called_once_with(
+            self.fake_upgrade,
+            mock.ANY,
+        )
+        fake_engine().start.assert_called_once_with()
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_post_upgrades_no_to_version(self, fake_create_upgrade):
@@ -104,6 +111,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             content_type='application/json',
             data=json.dumps({
                 'cluster_id': self.fake_upgrade['cluster_id'],
+                'driver': 'noop',
             })
         )
         self.assertEqual(400, resp.status_code)
@@ -124,7 +132,8 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             '/upgrades',
             content_type='application/json',
             data=json.dumps({
-                'to_version': constants.NEWTON
+                'to_version': constants.NEWTON,
+                'driver': 'noop',
             })
         )
         self.assertEqual(400, resp.status_code)
@@ -139,6 +148,38 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         self.assertEqual(expected_error, error)
         self.assertFalse(fake_create_upgrade.called)
 
+    @mock.patch('kostyor.upgrades.Engine')
+    @mock.patch('kostyor.db.api.get_cluster')
+    @mock.patch('kostyor.db.api.create_cluster_upgrade')
+    def test_post_upgrades_no_driver(self, fake_createupgrade, _, fake_engine):
+        # TODO: Reimplement test to check that 400 Bad Request is returned
+        #       once 'driver' is mandatory parameter.
+
+        fake_createupgrade.return_value = self.fake_upgrade
+
+        resp = self.app.post(
+            '/upgrades',
+            content_type='application/json',
+            data=json.dumps({
+                'cluster_id': self.fake_upgrade['cluster_id'],
+                'to_version': constants.NEWTON,
+            })
+        )
+        self.assertEqual(201, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        self._assert_upgrades(self.fake_upgrade, received)
+
+        fake_createupgrade.assert_called_once_with(
+            self.fake_upgrade['cluster_id'],
+            constants.NEWTON,
+        )
+        fake_engine.assert_called_once_with(
+            self.fake_upgrade,
+            mock.ANY,
+        )
+        fake_engine().start.assert_called_once_with()
+
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_post_upgrades_wrong_to_version(self, fake_db_create_upgrade):
         resp = self.app.post(
@@ -146,7 +187,8 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             content_type='application/json',
             data=json.dumps({
                 'cluster_id': self.fake_upgrade['cluster_id'],
-                'to_version': 'unsupported-value'
+                'to_version': 'unsupported-value',
+                'driver': 'noop',
             })
         )
         self.assertEqual(400, resp.status_code)
@@ -172,6 +214,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             data=json.dumps({
                 'cluster_id': self.fake_upgrade['cluster_id'],
                 'to_version': constants.NEWTON,
+                'driver': 'noop',
             })
         )
         self.assertEqual(404, resp.status_code)
@@ -195,6 +238,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             data=json.dumps({
                 'cluster_id': self.fake_upgrade['cluster_id'],
                 'to_version': constants.NEWTON,
+                'driver': 'noop',
             })
         )
         self.assertEqual(400, resp.status_code)
@@ -217,7 +261,8 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             content_type='application/json',
             data=json.dumps({
                 'cluster_id': self.fake_upgrade['cluster_id'],
-                'to_version': constants.LIBERTY
+                'to_version': constants.LIBERTY,
+                'driver': 'noop',
             })
         )
         self.assertEqual(400, resp.status_code)

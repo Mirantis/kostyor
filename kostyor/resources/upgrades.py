@@ -1,11 +1,13 @@
 import cerberus
 import six
+import stevedore
 
 from flask import request
 from flask_restful import Resource, fields, marshal_with, abort
 
 from kostyor.common import constants, exceptions
 from kostyor.db import api as db_api
+from kostyor import upgrades
 
 
 _PUBLIC_ATTRIBUTES = {
@@ -19,12 +21,19 @@ _PUBLIC_ATTRIBUTES = {
 }
 
 
+_SUPPORTED_DRIVERS = stevedore.extension.ExtensionManager(
+    namespace='kostyor.upgrades.drivers',
+    invoke_on_load=False,
+)
+
+
 class Upgrades(Resource):
 
     _schema = {
         'cluster_id': {'type': 'string', 'required': True},
         'to_version': {'type': 'string', 'required': True,
                        'allowed': constants.OPENSTACK_VERSIONS},
+        'driver': {'type': 'string', 'allowed': _SUPPORTED_DRIVERS.names()},
     }
 
     @marshal_with(_PUBLIC_ATTRIBUTES)
@@ -47,6 +56,15 @@ class Upgrades(Resource):
                 payload['cluster_id'],
                 payload['to_version']
             )
+
+            # TODO: Driver must become requires argument once CLI forces
+            #       users to choose one.
+            driver_name = payload.get('driver', 'noop')
+            driver = _SUPPORTED_DRIVERS[driver_name].plugin()
+
+            engine = upgrades.Engine(upgrade, driver)
+            engine.start()
+
         except exceptions.BadRequest as exc:
             abort(400, message=six.text_type(exc))
         except exceptions.NotFound as exc:

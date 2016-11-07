@@ -165,3 +165,28 @@ Each playbook runs independently, they don't have shared namespace with variable
 
 That means that we can split whole upgrade at least on 20 pieces.
 Also if the piece was done successfully we don't need to repeat it when try to resume upgrade.
+
+
+Testing the Ansible Driver
+==========================
+
+* `Use an AIO instance`_ - based off Ubuntu 14.04
+
+* Check out the stable/mitaka branch of OpenStack-Ansible 
+
+* Run `scripts/boostrap-ansible.sh`
+
+* Run `scripts/bootstraip-aio.sh`
+
+* Edit `/etc/openstack_deploy/user_variables.yml` and change the
+  `affinity`_ for `galera_container` and `rabbit_mq_container` to `3`
+
+  This works around https://bugs.launchpad.net/openstack-ansible/+bug/1595143
+
+* Run `scripts/run-playbooks.sh`
+
+This will create the base environment where Mitaka is installed.
+
+.. _Use an AIO instance: http://docs.openstack.org/developer/openstack-ansible/developer-docs/quickstart-aio.html#rebooting-an-aio
+
+.. _affinity: https://github.com/openstack/openstack-ansible/blob/eol-kilo/etc/openstack_deploy/openstack_user_config.yml.aio#L71-L77

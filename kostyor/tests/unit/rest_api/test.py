@@ -1,5 +1,4 @@
 import json
-import sys
 import unittest
 
 from flask import wrappers
@@ -9,7 +8,6 @@ import mock
 from kostyor.inventory import discover
 from kostyor.rest_api import app
 from kostyor.common import constants
-sys.modules['kostyor.conf'] = mock.Mock()
 
 
 class TestResponse(wrappers.Response):

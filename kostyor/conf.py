@@ -20,7 +20,7 @@ CONF.register_opt(connection_opt, group=database_group)
 rpc_group = cfg.OptGroup(name='rpc', title='RPC settings')
 rpc_opts = [
     cfg.StrOpt('broker_url',
-               default='sqla+sqlite:////tmp/celery.db',
+               default='redis://localhost:6379/0',
                help=('Broker backend to be used. Must be an URL in the form '
                      'of "transport://user:pass@host:port/vhost".')),
     cfg.StrOpt('celery_result_backend',

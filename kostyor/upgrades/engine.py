@@ -70,49 +70,38 @@ SCENARIO = [
 ]
 
 
-def _get_hosts_by_tag(hosts, tag):
+def iterhosts(hosts):
+    def _sortkey(service):
+        for index, tag in enumerate(['controller', 'compute', 'storage']):
+            if tag in service.tags:
+                return index
+
+    # Generate serviceindex where first goes services of controllers, then -
+    # services of computes, and only then - ones from storages. This is an
+    # essential part for getting proper an upgrade order of hosts as it's
+    # used below to determine most important ones.
     serviceindex = [
         service.name
-        for project in SCENARIO for service in project.services
-        if tag in service.tags
+        for service in sorted(
+            [service for project in SCENARIO for service in project.services],
+            key=_sortkey
+        )
     ]
-
-    def _interested(host):
-        return next((
-            svc['name'] in serviceindex
-            for svc in dbapi.get_services_by_host(host['id'])
-        ), None)
-    tagged_hosts = filter(_interested, hosts)
 
     def _sortkey(host):
         services = dbapi.get_services_by_host(host['id'])
-
         # Well, that's a tricky part. :) We need to sort hosts in the order
         # of service occurrence. Since each host may (and probably will)
         # contain multiple services, we need to use the most important
         # one as a sort key.
         return min((serviceindex.index(svc['name']) for svc in services))
-    return sorted(tagged_hosts, key=_sortkey)
-
-
-def get_controllers(hosts):
-    return _get_hosts_by_tag(hosts, 'controller')
-
-
-def get_computes(hosts):
-    return _get_hosts_by_tag(hosts, 'compute')
-
-
-def get_storages(hosts):
-    return _get_hosts_by_tag(hosts, 'storage')
+    return sorted(hosts, key=_sortkey)
 
 
 def iterservices(host):
     serviceindex = [
-        service.name
-        for project in SCENARIO for service in project.services
+        service.name for project in SCENARIO for service in project.services
     ]
-
     servicemap = {
         service['name']: service
         for service in dbapi.get_services_by_host(host['id'])
@@ -153,54 +142,7 @@ class Engine(object):
         # by them in right order. For example, first goes controllers with
         # keystone, then with nova, and so on. See iteration details in
         # get_controllers() docstring.
-        for host in get_controllers(hosts):
-            subtasks.append(
-                self.driver.pre_host_upgrade_hook(self._upgrade, host)
-            )
-
-            for service in iterservices(host):
-                subtasks.extend([
-                    self.driver.pre_service_upgrade_hook(
-                        self._upgrade, service
-                    ),
-                    self.driver.start_upgrade(
-                        self._upgrade, service
-                    ),
-                    self.driver.post_service_upgrade_hook(
-                        self._upgrade, service
-                    ),
-                ])
-
-            subtasks.append(
-                self.driver.post_host_upgrade_hook(self._upgrade, host)
-            )
-
-        # Well, controllers are done. It's time to upgrade compute nodes.
-        # Again, node by node, service by service.
-        for host in get_computes(hosts):
-            subtasks.append(
-                self.driver.pre_host_upgrade_hook(self._upgrade, host)
-            )
-
-            for service in iterservices(host):
-                subtasks.extend([
-                    self.driver.pre_service_upgrade_hook(
-                        self._upgrade, service
-                    ),
-                    self.driver.start_upgrade(
-                        self._upgrade, service
-                    ),
-                    self.driver.post_service_upgrade_hook(
-                        self._upgrade, service
-                    ),
-                ])
-
-            subtasks.append(
-                self.driver.post_host_upgrade_hook(self._upgrade, host)
-            )
-
-        # Finishing upgrades by upgrading storage nodes.
-        for host in get_storages(hosts):
+        for host in iterhosts(hosts):
             subtasks.append(
                 self.driver.pre_host_upgrade_hook(self._upgrade, host)
             )

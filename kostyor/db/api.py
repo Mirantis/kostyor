@@ -158,6 +158,10 @@ def get_hosts_by_cluster(cluster_id):
     return [host.to_dict() for host in hosts]
 
 
+def get_host(host_id):
+    return db_session.query(models.Host).get(host_id).to_dict()
+
+
 def create_service(name, host_id, version):
     new_service = models.Service()
     new_service.name = name

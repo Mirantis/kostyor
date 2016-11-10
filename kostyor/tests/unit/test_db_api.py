@@ -85,6 +85,15 @@ class DbApiTestCase(base.BaseTestCase):
         result = db_api.get_hosts_by_cluster(self.cluster['id'])
         self.assertEqual(expected_result, result)
 
+    def test_get_host(self):
+        host = db_api.create_host('hostname', self.cluster['id'])
+        expected_result = {'id': host['id'],
+                           'hostname': 'hostname',
+                           'cluster_id': self.cluster['id']}
+
+        result = db_api.get_host(host['id'])
+        self.assertEqual(expected_result, result)
+
     def test_get_host_by_cluster_wrong_cluster(self):
         self.assertRaises(exceptions.ClusterNotFound,
                           db_api.get_hosts_by_cluster,

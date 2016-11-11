@@ -16,6 +16,19 @@ Kubernetes control plane.
 
 Nodes can also be removed from a cluster using `kubectl drain`_
 
+
+Misc Notes
+----------
+
+The openstack topology file is important: 
+if you change the topology file, and re-run the fuel-ccp deploy command,
+it will upgrade the openstack services
+
+* research the changing of docker image tags for the service?
+
+* Work is being done to connect openstack to k8s - where if someone runs kubectl drain, it'll also live-migrate nova instances off. [ICDE-1280] [ICDE-1276] [ICDE-1279]
+
+
 .. _Kubernetes: http://kubernetes.io
 .. _Fuel CCP: http://fuel-ccp.readthedocs.io/en/latest/
 .. _Kubernetes rolling updates: http://kubernetes.io/docs/user-guide/rolling-updates/

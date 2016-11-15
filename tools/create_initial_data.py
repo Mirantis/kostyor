@@ -12,6 +12,6 @@ cluster = api.create_cluster("test", constants.MITAKA,
                              constants.READY_FOR_UPGRADE)
 
 host = api.create_host("test-host", cluster["id"])
-api.create_service("test-service", host['id'], constants.MITAKA)
+api.create_service("nova-api", host['id'], constants.MITAKA)
 
 api.db_session.commit()

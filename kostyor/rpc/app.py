@@ -13,4 +13,5 @@ def create_app(conf):
 
     return app
 
+
 app = create_app(CONF)

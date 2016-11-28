@@ -14,6 +14,16 @@ class UpgradeDriver():
         """
         pass
 
+    def pre_upgrade_hook(self, upgrade_task):
+        """Called by the decision engine before upgrade procedure is started,
+        allows an UpgradeDriver the opportunity to do any operations required
+        before starting other playbooks.
+
+        :param upgrade_task: the upgrade task that the engine is performing
+        :type upgrade_task: kostyor.db.models.UpgradeTask instance
+        """
+        return tasks.noop.si()
+
     def pre_host_upgrade_hook(self, upgrade_task, host):
         """Called by the decision engine before a host is upgraded,
         allows an UpgradeDriver the opportunity to do any operations required

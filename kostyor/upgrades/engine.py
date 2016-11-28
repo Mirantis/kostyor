@@ -134,7 +134,7 @@ class Engine(object):
         self.driver = driver
 
     def start(self):
-        subtasks = []
+        subtasks = [self.driver.pre_upgrade_hook(self._upgrade)]
         hosts = dbapi.get_hosts_by_cluster(self._upgrade['cluster_id'])
 
         # We may have plenty controllers each with various set of services.

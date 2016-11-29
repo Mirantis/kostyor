@@ -20,6 +20,7 @@ class MockUpgradeDriver(object):
         'cancel_upgrade',
         'rollback_upgrade',
         'continue_upgrade',
+        'pre_upgrade_hook',
         'pre_host_upgrade_hook',
         'post_host_upgrade_hook',
         'pre_service_upgrade_hook',
@@ -295,6 +296,10 @@ class TestEngine(oslotest.base.BaseTestCase):
             expected_host_calls,
             self.engine.driver.post_host_upgrade_hook.call_args_list)
 
+        self.engine.driver.pre_upgrade_hook.assert_called_once_with(
+            self.upgrade
+        )
+
     def test_all_in_one_assignment(self):
         self.dbapi.get_hosts_by_cluster.return_value = [
             {'id': '5708c51f-5421-4ecd-9a9e-000000000001',
@@ -504,3 +509,7 @@ class TestEngine(oslotest.base.BaseTestCase):
         self.assertEqual(
             expected_host_calls,
             self.engine.driver.post_host_upgrade_hook.call_args_list)
+
+        self.engine.driver.pre_upgrade_hook.assert_called_once_with(
+            self.upgrade
+        )

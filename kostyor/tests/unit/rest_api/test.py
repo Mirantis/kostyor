@@ -79,7 +79,11 @@ class KostyorRestAPITest(unittest.TestCase):
         fake_create_cluster.return_value = cluster
         fake_discovery_drivers.return_value = ['openstack', ]
         driver = discover.OpenStackServiceDiscovery()
-        driver.discover = mock.Mock(return_value=[('1.2.3.4', 'nova-api'), ])
+        driver.discover = mock.Mock(return_value={
+            'hosts': {
+                '1.2.3.4': [{'name': 'nova-api'}, ]
+            }
+        })
         fake_driver_manager.return_value.driver = driver
 
         res = self.app.post('/discover-cluster',
@@ -98,9 +102,7 @@ class KostyorRestAPITest(unittest.TestCase):
         driver.discover.assert_called_once_with()
         fake_create_cluster.assert_called_once_with(
             'test-cluster',
-            {
-                'services': driver.discover.return_value,
-            })
+            driver.discover.return_value)
 
     def test_discover_cluster_unsupported_method_error_response(self):
         res = self.app.post('/discover-cluster',
@@ -136,16 +138,16 @@ class KostyorRestAPITest(unittest.TestCase):
     def test_discover_cluster_driver_load_failed_error_response(
             self,
             fake_discovery_drivers,
-            fake_driver_manager):
+            fake_ext_manager):
         fake_discovery_drivers.return_value = ['openstack', ]
-        fake_driver_manager.side_effect = Exception("Cannot load driver.")
+        fake_ext_manager.side_effect = Exception("Cannot load driver.")
 
         res = self.app.post('/discover-cluster',
                             data=self.discover_cluster_request_data)
 
         self.assertEqual(404, res.status_code)
         fake_discovery_drivers.assert_called_once_with()
-        fake_driver_manager.assert_called_once_with(
+        fake_ext_manager.assert_called_once_with(
             namespace='kostyor.discovery_drivers',
             name='openstack',
             invoke_on_load=True,

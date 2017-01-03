@@ -1,5 +1,3 @@
-import collections
-
 import cerberus
 import stevedore
 
@@ -29,22 +27,19 @@ def _create_cluster(name, info):
     cluster = dbapi.create_cluster(
         name,
         info.get('version', constants.UNKNOWN),
-        info.get('status', constants.NOT_READY_FOR_UPGRADE),
+        info.get('status', constants.NOT_READY_FOR_UPGRADE)
     )
 
-    host_services_map = collections.defaultdict(list)
-    for host, service in info.get('services', []):
-        host_services_map[host].append(service)
-
-    hosts_ids = {}
-    for host in host_services_map:
-        hosts_ids[host] = dbapi.create_host(host, cluster['id'])['id']
-
-    for host, service in host_services_map.items():
-        for s in service:
-            # Let's consider that service version is the same as cluster's
-            # unless stated otherwise.
-            dbapi.create_service(s, hosts_ids[host], cluster['version'])
+    for hostname, services in info.get('hosts', {}).items():
+        host = dbapi.create_host(hostname, cluster['id'])
+        for service in services:
+            dbapi.create_service(
+                service['name'],
+                host['id'],
+                # Let's consider that service version is the same as
+                # cluster's unless stated otherwise.
+                service.get('version', cluster['version'])
+            )
 
     return cluster
 
@@ -82,9 +77,7 @@ class Discover(Resource):
 
         DriverCls = _SUPPORTED_DRIVERS[payload['method']].plugin
         driver = DriverCls(**payload.get('parameters', {}))
-        cluster = _create_cluster(payload['name'], {
-            'services': driver.discover(),
-        })
+        cluster = _create_cluster(payload['name'], driver.discover())
 
         # NOTE: Discovering may be a long-running operation, so we need to
         #       consider implementing task mechanism with result polling

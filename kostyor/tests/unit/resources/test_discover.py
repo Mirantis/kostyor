@@ -154,25 +154,43 @@ class TestCreateCluster(oslotest.base.BaseTestCase):
             'version': constants.UNKNOWN,
             'status': constants.NOT_READY_FOR_UPGRADE,
         }
-        create_host.return_value = {
-            'id': 'e9cfae98-1af7-4cb8-9178-37465e48b689',
-            'hostname': 'host-a',
-            'cluster_id': create_cluster.return_value['id'],
-        }
+        hosts = [
+            {'id': 'e9cfae98-1af7-4cb8-9178-37465e48b689',
+             'hostname': 'host-a',
+             'cluster_id': create_cluster.return_value['id']},
+            {'id': 'b6d14dea-51b0-47b8-bcee-7fa98dc53f23',
+             'hostname': 'host-b',
+             'cluster_id': create_cluster.return_value['id']},
+        ]
+
+        def _create_host(hostname, _):
+            return filter(lambda h: h['hostname'] == hostname, hosts)[0]
+        create_host.side_effect = _create_host
+
         cluster = discover._create_cluster(
             'mycluster',
             {
-                'services': [('host-a', 'nova-api'), ]
+                'hosts': {
+                    'host-a': [
+                        {'name': 'nova-api'},
+                        {'name': 'nova-conductor'},
+                    ],
+                    'host-b': [
+                        {'name': 'nova-compute'},
+                    ],
+                },
             }
         )
 
         self.assertEqual(cluster, create_cluster.return_value)
         create_cluster.assert_called_once_with(
             'mycluster', constants.UNKNOWN, constants.NOT_READY_FOR_UPGRADE)
-        create_host.assert_called_once_with(
-            'host-a', create_cluster.return_value['id'])
-        create_service.assert_called_once_with(
-            'nova-api',
-            create_host.return_value['id'],
-            create_cluster.return_value['version'],
-        )
+        self.assertEqual(sorted(create_host.call_args_list), [
+            mock.call('host-a', cluster['id']),
+            mock.call('host-b', cluster['id']),
+        ])
+        self.assertEqual(sorted(create_service.call_args_list), [
+            mock.call('nova-api', hosts[0]['id'], cluster['version']),
+            mock.call('nova-compute', hosts[1]['id'], cluster['version']),
+            mock.call('nova-conductor', hosts[0]['id'], cluster['version']),
+        ])

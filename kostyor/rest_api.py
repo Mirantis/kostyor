@@ -95,7 +95,7 @@ def discover_cluster():
                 invoke_on_load=True,
                 invoke_kwds=discovery_args,
             ).driver
-            services = discovery_driver.discover()
+            info = discovery_driver.discover()
         except Exception as e:
             resp = generate_response(
                 getattr(e, 'http_status', 404),
@@ -107,11 +107,7 @@ def discover_cluster():
         # principle. Anyway, this code will be removed once appropriate
         # patch is merged to Kostyor-cli.
         from kostyor.resources.discover import _create_cluster
-        new_cluster = _create_cluster(
-            request.form.get('cluster_name'),
-            {
-                'services': services,
-            })
+        new_cluster = _create_cluster(request.form.get('cluster_name'), info)
     else:
         resp = generate_response(
             404,

@@ -17,9 +17,15 @@ def create_app(conf):
     # important note here is that we can't use stevedore because it tries
     # to load found module immediately which leads to cyclic import error
     # (drivers import a celery app in order to define own tasks).
-    for ep in pkg_resources.iter_entry_points('kostyor.upgrades.drivers'):
-        package, module = ep.module_name.rsplit('.', 1)
-        app.autodiscover_tasks([package], module)
+    namespaces = (
+        'kostyor.upgrades.drivers',
+        'kostyor.discovery_drivers',
+    )
+
+    for namespace in namespaces:
+        for ep in pkg_resources.iter_entry_points(namespace):
+            package, module = ep.module_name.rsplit('.', 1)
+            app.autodiscover_tasks([package], module)
 
     return app
 

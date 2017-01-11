@@ -1,6 +1,8 @@
 import abc
+import collections
 import re
 
+import six
 from six.moves import map
 
 from keystoneauth1.identity import v2 as keystoneauth_v2
@@ -10,24 +12,30 @@ from novaclient import client as n_client
 from neutronclient.v2_0 import client as mutnauq_client
 
 
+@six.add_metaclass(abc.ABCMeta)
 class ServiceDiscovery(object):
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def discover(self):
         """
-        Returns a list of services, and the host they are on.
+        Returns a dictionary of discovered facts.
 
-        Example:
+        Example::
 
-            [(u'devstack-1.coreitpro.com', u'nova-conductor'),
-             (u'devstack-1.coreitpro.com', u'nova-cert'),
-             (u'devstack-1.coreitpro.com', u'nova-scheduler'),
-             (u'devstack-1.coreitpro.com', u'nova-consoleauth'),
-             (u'devstack-1.coreitpro.com', u'nova-compute'),
-             (u'devstack-2.coreitpro.com', u'nova-compute'),
-             (u'devstack-3.coreitpro.com', u'nova-compute')]
+            {
+                'version': 'newton',
+                'status': 'READY FOR UPGRADE',
+                'hosts': {
+                    'devstack-1.coreitpro.com': [
+                        {'name': 'nova-conductor', 'version': 'newton'},
+                        {'name': 'nova-scheduler', 'version': 'newton'},
+                    ],
+                    'devstack-2.coreitpro.com': [
+                        {'name': 'nova-compute', 'version': 'newton'},
+                    ]
+                }
+            }
+
         """
         pass
 
@@ -49,7 +57,11 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         services.extend(self.discover_keystone())
         services.extend(self.discover_nova())
         services.extend(self.discover_neutron())
-        return services
+
+        info = {'hosts': collections.defaultdict(list)}
+        for host, service in services:
+            info['hosts'][host].append({'name': service})
+        return info
 
     def discover_keystone(self):
         """ Uses the Keystone REST API to discover services """

@@ -61,11 +61,66 @@ SCENARIO = [
         Service('cinder-volume',    ['storage']),
     ]),
 
+    Project('Horizon', [
+        Service('horizon-wsgi',        ['controller']),
+    ]),
+
     Project('Heat', [
         Service('heat-api',            ['controller']),
         Service('heat-engine',         ['controller']),
         Service('heat-api-cfn',        ['controller']),
         Service('heat-api-cloudwatch', ['controller']),
+    ]),
+
+    Project('Ceilometer', [
+        Service('ceilometer-collector',             ['controller']),
+        Service('ceilometer-agent-notification',    ['controller']),
+        Service('ceilometer-polling',               ['controller']),
+
+        # DEPRECATED in favor of Aodh, Gnochi and/or Panko.
+        Service('ceilometer-api',                   ['controller']),
+    ]),
+
+    Project('Aodh', [
+        Service('aodh-evaluator',   ['controller']),
+        Service('aodh-notifier',    ['controller']),
+        Service('aodh-listener',    ['controller']),
+        Service('aodh-api',         ['controller']),
+    ]),
+
+    Project('Gnocchi', [
+        Service('gnocchi-statsd',   ['controller']),
+        Service('gnocchi-metricd',  ['controller']),
+        Service('gnocchi-api',      ['controller']),
+    ]),
+
+    Project('Swift', [
+        Service('swift-proxy-server',           ['controller']),
+        Service('swift-account-auditor',        ['storage']),
+        Service('swift-account-reaper',         ['storage']),
+        Service('swift-account-replicator',     ['storage']),
+        Service('swift-account-server',         ['storage']),
+        Service('swift-account-server',         ['storage']),
+        Service('swift-container-auditor',      ['storage']),
+        Service('swift-container-reconciler',   ['storage']),
+        Service('swift-container-replicator',   ['storage']),
+        Service('swift-container-server',       ['storage']),
+        Service('swift-container-sync',         ['storage']),
+        Service('swift-container-updater',      ['storage']),
+        Service('swift-object-auditor',         ['storage']),
+        Service('swift-object-expirer',         ['storage']),
+        Service('swift-object-reconstructor',   ['storage']),
+        Service('swift-object-replicator',      ['storage']),
+        Service('swift-object-server',          ['storage']),
+        Service('swift-object-server',          ['storage']),
+        Service('swift-object-updater',         ['storage']),
+    ]),
+
+    # Does not support rolling upgrades in Newton; to be implemented in Ocata.
+    Project('Ironic', [
+        Service('ironic-inspector', ['controller']),
+        Service('ironic-conductor', ['controller']),
+        Service('ironic-api',       ['controller']),
     ]),
 ]
 

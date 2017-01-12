@@ -61,7 +61,7 @@ class KostyorRestAPITest(unittest.TestCase):
         res = self.app.get('/upgrade-versions/{}'.format(self.cluster_id))
         self.assertEqual(200, res.status_code)
         received = res.get_json()
-        self.assertEqual(['mitaka', 'newton'], received)
+        self.assertEqual(['mitaka', 'newton', 'ocata'], received)
 
     @mock.patch('stevedore.driver.DriverManager')
     @mock.patch('kostyor.rest_api.discovery_drivers')

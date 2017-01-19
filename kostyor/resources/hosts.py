@@ -12,6 +12,7 @@ _PUBLIC_ATTRIBUTES = {
     'id': fields.String,
     'hostname': fields.String,
     'cluster_id': fields.String,
+    'region': fields.String,
 }
 
 

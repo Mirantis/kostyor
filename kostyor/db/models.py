@@ -47,6 +47,7 @@ class Host(Base, KostyorModelMixin):
 
     hostname = sa.Column(sa.String(255))
     cluster_id = sa.Column(sa.ForeignKey('clusters.id'))
+    region = sa.Column(sa.String(255))
 
 
 class Service(Base, KostyorModelMixin):

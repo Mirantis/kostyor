@@ -77,19 +77,21 @@ class DbApiTestCase(base.BaseTestCase):
         self.assertEqual(update['name'], result['name'])
 
     def test_get_hosts_by_cluster_existing_cluster_success(self):
-        host = db_api.create_host('hostname', self.cluster['id'])
+        host = db_api.create_host('hostname', self.cluster['id'], 'RegionOne')
         expected_result = [{'id': host['id'],
                             'hostname': 'hostname',
-                            'cluster_id': self.cluster['id']}]
+                            'cluster_id': self.cluster['id'],
+                            'region': 'RegionOne'}]
 
         result = db_api.get_hosts_by_cluster(self.cluster['id'])
         self.assertEqual(expected_result, result)
 
     def test_get_host(self):
-        host = db_api.create_host('hostname', self.cluster['id'])
+        host = db_api.create_host('hostname', self.cluster['id'], 'RegionOne')
         expected_result = {'id': host['id'],
                            'hostname': 'hostname',
-                           'cluster_id': self.cluster['id']}
+                           'cluster_id': self.cluster['id'],
+                           'region': 'RegionOne'}
 
         result = db_api.get_host(host['id'])
         self.assertEqual(expected_result, result)
@@ -100,7 +102,7 @@ class DbApiTestCase(base.BaseTestCase):
                           'non-existing-id')
 
     def test_get_services_by_host_existing_cluster_success(self):
-        host = db_api.create_host('hostname', self.cluster['id'])
+        host = db_api.create_host('hostname', self.cluster['id'], 'RegionOne')
         service = db_api.create_service('nova-api',
                                         host['id'],
                                         constants.MITAKA)

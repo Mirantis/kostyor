@@ -141,10 +141,11 @@ def get_upgrades(cluster_id=None):
     return [upgrade.to_dict() for upgrade in query]
 
 
-def create_host(name, cluster_id):
+def create_host(name, cluster_id, region):
     new_host = models.Host()
     new_host.hostname = name
     new_host.cluster_id = cluster_id
+    new_host.region = region
     db_session.add(new_host)
     db_session.commit()
     return new_host.to_dict()

@@ -25,14 +25,20 @@ class ServiceDiscovery(object):
             {
                 'version': 'newton',
                 'status': 'READY FOR UPGRADE',
-                'hosts': {
-                    'devstack-1.coreitpro.com': [
-                        {'name': 'nova-conductor', 'version': 'newton'},
-                        {'name': 'nova-scheduler', 'version': 'newton'},
-                    ],
-                    'devstack-2.coreitpro.com': [
-                        {'name': 'nova-compute', 'version': 'newton'},
-                    ]
+                'regions': {
+                    'RegionOne': {
+                        'hosts': {
+                            'devstack-1.coreitpro.com': [
+                                {'name': 'nova-conductor',
+                                 'version': 'newton'},
+                                {'name': 'nova-scheduler',
+                                 'version': 'newton'},
+                            ],
+                            'devstack-2.coreitpro.com': [
+                                {'name': 'nova-compute', 'version': 'newton'},
+                            ]
+                        }
+                    }
                 }
             }
 
@@ -55,12 +61,25 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
     def discover(self):
         services = []
         services.extend(self.discover_keystone())
-        services.extend(self.discover_nova())
-        services.extend(self.discover_neutron())
 
-        info = {'hosts': collections.defaultdict(list)}
-        for host, service in services:
-            info['hosts'][host].append({'name': service})
+        regions = {s['region'] for s in services}
+        info = {'regions': dict.fromkeys(regions)}
+        for region in regions:
+            info['regions'][region] = {
+                'hosts': collections.defaultdict(list)
+            }
+            services.extend(self.discover_nova(region))
+            services.extend(self.discover_neutron(region))
+            info['regions'][region] = {
+                'hosts': collections.defaultdict(list)
+            }
+
+        for service in services:
+            region = service['region']
+            host = service['host']
+            service_name = service['name']
+            info['regions'][region]['hosts'][host].append(
+                {'name': service_name})
         return info
 
     def discover_keystone(self):
@@ -71,7 +90,7 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         host_regex = re.compile("https?://([^/^:]*)")
 
         client = k_client.Client(session=self.session)
-        # TODO(sc68cal) Handle multiple regions and cells
+        # TODO(sc68cal) Handle multiple cells
 
         # Call the REST API once and store the results
         endpoints = client.endpoints.list()
@@ -81,20 +100,30 @@ class OpenStackServiceDiscovery(ServiceDiscovery):
         for endpoint in endpoints:
             for service in services:
                 if service.id == endpoint.service_id:
-                    entry = (host_regex.match(endpoint.internalurl).group(1),
-                             service.name + "-api")
+                    entry = {
+                        'host': host_regex.match(
+                            endpoint.internalurl).group(1),
+                        'name': service.name + "-api",
+                        'region': endpoint.region,
+                    }
                     service_map.append(entry)
         return service_map
 
-    def discover_nova(self):
+    def discover_nova(self, region):
         """ Uses the Nova REST API to discover agents and their location """
         client = n_client.Client(self.OS_COMPUTE_API_VERSION,
-                                 session=self.session)
-        return list(map(lambda service: (service.host, service.binary),
+                                 session=self.session,
+                                 region_name=region)
+        return list(map(lambda service: {'host': service.host,
+                                         'name': service.binary,
+                                         'region': region},
                         client.services.list()))
 
-    def discover_neutron(self):
+    def discover_neutron(self, region):
         """ Use the Neutron REST API to discover agents and their location """
-        client = mutnauq_client.Client(session=self.session)
-        return list(map(lambda agent: (agent['host'], agent['binary']),
+        client = mutnauq_client.Client(session=self.session,
+                                       region_name=region)
+        return list(map(lambda agent: {'host': agent['host'],
+                                       'name': agent['binary'],
+                                       'region': region},
                         client.list_agents()['agents']))

@@ -30,16 +30,17 @@ def _create_cluster(name, info):
         info.get('status', constants.NOT_READY_FOR_UPGRADE)
     )
 
-    for hostname, services in info.get('hosts', {}).items():
-        host = dbapi.create_host(hostname, cluster['id'])
-        for service in services:
-            dbapi.create_service(
-                service['name'],
-                host['id'],
-                # Let's consider that service version is the same as
-                # cluster's unless stated otherwise.
-                service.get('version', cluster['version'])
-            )
+    for region, hosts in info.get('regions', {'Unknown': info}).items():
+        for hostname, services in hosts.get('hosts', {}).items():
+            host = dbapi.create_host(hostname, cluster['id'], region)
+            for service in services:
+                dbapi.create_service(
+                    service['name'],
+                    host['id'],
+                    # Let's consider that service version is the same as
+                    # cluster's unless stated otherwise.
+                    service.get('version', cluster['version'])
+                )
 
     return cluster
 

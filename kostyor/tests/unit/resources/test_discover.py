@@ -163,22 +163,27 @@ class TestCreateCluster(oslotest.base.BaseTestCase):
              'cluster_id': create_cluster.return_value['id']},
         ]
 
-        def _create_host(hostname, _):
-            return filter(lambda h: h['hostname'] == hostname, hosts)[0]
+        def _create_host(hostname, *args):
+            host = filter(lambda h: h['hostname'] == hostname, hosts)
+            return list(host)[0]
         create_host.side_effect = _create_host
 
         cluster = discover._create_cluster(
             'mycluster',
             {
-                'hosts': {
-                    'host-a': [
-                        {'name': 'nova-api'},
-                        {'name': 'nova-conductor'},
-                    ],
-                    'host-b': [
-                        {'name': 'nova-compute'},
-                    ],
-                },
+                'regions': {
+                    'RegionOne': {
+                        'hosts': {
+                            'host-a': [
+                                {'name': 'nova-api'},
+                                {'name': 'nova-conductor'},
+                            ],
+                            'host-b': [
+                                {'name': 'nova-compute'},
+                            ],
+                        },
+                    },
+                }
             }
         )
 
@@ -186,8 +191,8 @@ class TestCreateCluster(oslotest.base.BaseTestCase):
         create_cluster.assert_called_once_with(
             'mycluster', constants.UNKNOWN, constants.NOT_READY_FOR_UPGRADE)
         self.assertEqual(sorted(create_host.call_args_list), [
-            mock.call('host-a', cluster['id']),
-            mock.call('host-b', cluster['id']),
+            mock.call('host-a', cluster['id'], 'RegionOne'),
+            mock.call('host-b', cluster['id'], 'RegionOne'),
         ])
         self.assertEqual(sorted(create_service.call_args_list), [
             mock.call('nova-api', hosts[0]['id'], cluster['version']),

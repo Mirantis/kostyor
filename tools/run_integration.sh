@@ -42,7 +42,7 @@ kostyor cluster-status $CLUSTER_ID
 
 kostyor list-upgrade-versions
 
-kostyor list-discovery-methods
+kostyor discover-list
 
 kostyor check-upgrade $CLUSTER_ID
 

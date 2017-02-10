@@ -62,6 +62,13 @@ class Cluster(Base, KostyorModelMixin):
         self.status = status
 
 
+hosts_services = sa.Table('hosts_services', Base.metadata, *(
+    sa.Column('host_id', sa.String(36), sa.ForeignKey('hosts.id')),
+    sa.Column('service_id', sa.String(36), sa.ForeignKey('services.id')),
+    sa.UniqueConstraint('host_id', 'service_id')
+))
+
+
 class Host(Base, KostyorModelMixin):
     __tablename__ = 'hosts'
 
@@ -73,8 +80,11 @@ class Service(Base, KostyorModelMixin):
     __tablename__ = 'services'
 
     name = sa.Column(sa.String(255))
-    host_id = sa.Column(sa.ForeignKey('hosts.id'))
     version = sa.Column(sa.Enum(*constants.OPENSTACK_VERSIONS))
+
+    hosts = sa.orm.relationship('Host',
+                                secondary=hosts_services,
+                                backref='services')
 
 
 class UpgradeTask(Base, KostyorModelMixin):

@@ -164,7 +164,7 @@ class TestCreateCluster(oslotest.base.BaseTestCase):
         ]
 
         def _create_host(hostname, _):
-            return filter(lambda h: h['hostname'] == hostname, hosts)[0]
+            return list(filter(lambda h: h['hostname'] == hostname, hosts))[0]
         create_host.side_effect = _create_host
 
         cluster = discover._create_cluster(

@@ -7,7 +7,27 @@ from oslo_utils import uuidutils
 
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+
+# There's no standard naming conventions for database constraints, each
+# RDBMS implements its own naming convention. And if in case of PostgreSQL
+# the convention is predictable, Oracle uses randomization in its naming.
+# The things even worse with SQLite that supports unnamed constraints,
+# which means no way to drop them. In order to have reliable way change
+# and/or drop constraints in Alembic migrations, it's recommended to setup
+# SQLAlchemy naming convention for constraints and tie Alembic to it.
+#
+# See http://alembic.zzzcomputing.com/en/latest/naming.html for details.
+metadata = sa.MetaData(
+    naming_convention={
+        'ix': 'ix_%(column_0_label)s',
+        'uq': 'uq_%(table_name)s_%(column_0_name)s',
+        'ck': 'ck_%(table_name)s_%(column_0_name)s',
+        'fk': 'fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s',
+        'pk': 'pk_%(table_name)s',
+    }
+)
+
+Base = declarative_base(metadata=metadata)
 
 
 class KostyorModelMixin(object):

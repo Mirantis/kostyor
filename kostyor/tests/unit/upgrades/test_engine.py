@@ -6,31 +6,28 @@ import oslotest.base
 from kostyor.common import constants
 from kostyor.rpc import tasks
 from kostyor.upgrades import Engine
+from kostyor.upgrades.drivers import base as basedriver
 
 
-# We can't inherit 'base.UpgradeDriver' since it requires to implement
-# abstract methods, and we are not interested in it. Instead we want
-# to mock each interface method in order to trace its calls.
-class MockUpgradeDriver(object):
+# A special version of the driver that mocks driver interface so we can
+# track calls to its methods.
+class MockUpgradeDriver(basedriver.UpgradeDriver):
 
     _methods = [
-        'stop_upgrade',
-        'start_upgrade',
-        'pause_upgrade',
-        'cancel_upgrade',
-        'rollback_upgrade',
-        'continue_upgrade',
-        'pre_upgrade_hook',
-        'pre_host_upgrade_hook',
-        'post_host_upgrade_hook',
-        'pre_service_upgrade_hook',
-        'post_service_upgrade_hook',
+        'pre_upgrade',
+        'start',
     ]
 
-    def __init__(self):
-        for method in self._methods:
-            setattr(self, method, mock.Mock(return_value=tasks.noop.si()))
-        self.supports_upgrade_rollback = mock.Mock(return_value=False)
+    def __new__(cls):
+        # Since we don't implement abstract methods but mock them instead,
+        # we need to consider everything implemented and do not fail on
+        # attempt to create an instance.
+        cls.__abstractmethods__ = set()
+
+        instance = super(MockUpgradeDriver, cls).__new__(cls)
+        for method in cls._methods:
+            setattr(instance, method, mock.Mock(return_value=tasks.noop.si()))
+        return instance
 
 
 class TestEngine(oslotest.base.BaseTestCase):
@@ -53,7 +50,7 @@ class TestEngine(oslotest.base.BaseTestCase):
         self.dbapi = patcher.start()
 
     def test_multinode_assignment(self):
-        self.dbapi.get_hosts_by_cluster.return_value = [
+        hosts = [
             {'id': '5708c51f-5421-4ecd-9a9e-000000000001',
              'hostname': 'host-1',
              'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687'},
@@ -64,358 +61,140 @@ class TestEngine(oslotest.base.BaseTestCase):
              'hostname': 'host-3',
              'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687'},
         ]
-
         services = {
             # compute
             '5708c51f-5421-4ecd-9a9e-000000000001': [
-                {'name': 'nova-compute',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-linuxbridge-agent',
-                 'version': constants.MITAKA},
+                {'name': 'nova-compute'},
+                {'name': 'neutron-linuxbridge-agent'},
             ],
-
             # controller
             '5708c51f-5421-4ecd-9a9e-000000000002': [
-                {'name': 'nova-spicehtml5proxy',
-                 'version': constants.MITAKA},
-                {'name': 'nova-scheduler',
-                 'version': constants.MITAKA},
-                {'name': 'nova-api',
-                 'version': constants.MITAKA},
-                {'name': 'nova-conductor',
-                 'version': constants.MITAKA},
-
-                {'name': 'keystone-wsgi-public',
-                 'version': constants.MITAKA},
-                {'name': 'keystone-wsgi-admin',
-                 'version': constants.MITAKA},
-
-                {'name': 'neutron-server',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-linuxbridge-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-l3-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-dhcp-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-metering-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-metadata-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-ns-metadata-proxy',
-                 'version': constants.MITAKA},
-
-                {'name': 'glance-registry',
-                 'version': constants.MITAKA},
-                {'name': 'glance-api',
-                 'version': constants.MITAKA},
-
-                {'name': 'heat-api',
-                 'version': constants.MITAKA},
-                {'name': 'heat-api-cloudwatch',
-                 'version': constants.MITAKA},
-                {'name': 'heat-api-cfn',
-                 'version': constants.MITAKA},
-                {'name': 'heat-engine',
-                 'version': constants.MITAKA},
-
-                {'name': 'cinder-api',
-                 'version': constants.MITAKA},
-                {'name': 'cinder-scheduler',
-                 'version': constants.MITAKA},
+                {'name': 'nova-spicehtml5proxy'},
+                {'name': 'nova-scheduler'},
+                {'name': 'nova-api'},
+                {'name': 'nova-conductor'},
+                {'name': 'keystone-wsgi-public'},
+                {'name': 'keystone-wsgi-admin'},
+                {'name': 'neutron-server'},
+                {'name': 'neutron-linuxbridge-agent'},
+                {'name': 'neutron-l3-agent'},
+                {'name': 'neutron-dhcp-agent'},
+                {'name': 'neutron-metering-agent'},
+                {'name': 'neutron-metadata-agent'},
+                {'name': 'neutron-ns-metadata-proxy'},
+                {'name': 'glance-registry'},
+                {'name': 'glance-api'},
+                {'name': 'heat-api'},
+                {'name': 'heat-api-cloudwatch'},
+                {'name': 'heat-api-cfn'},
+                {'name': 'heat-engine'},
+                {'name': 'cinder-api'},
+                {'name': 'cinder-scheduler'},
             ],
-
             # storage
             '5708c51f-5421-4ecd-9a9e-000000000003': [
-                {'name': 'cinder-volume',
-                 'version': constants.MITAKA},
+                {'name': 'cinder-volume'},
             ],
         }
 
-        # mock dbapi to return predefined services
-        def get_services_by_host(host):
-            return services[host]
-        self.dbapi.get_services_by_host = get_services_by_host
+        self.dbapi.get_hosts_by_cluster.return_value = hosts
+        self.dbapi.get_services_by_host = lambda host: services[host]
 
         self.engine.start()
 
-        expected_service_calls = [
+        self.engine.driver.pre_upgrade.assert_called_once_with()
+        self.assertEqual([
             # controller
-            mock.call(self.upgrade,
-                      {'name': 'keystone-wsgi-admin',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'keystone-wsgi-public',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'glance-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'glance-registry',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-conductor',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-scheduler',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-spicehtml5proxy',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-server',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-linuxbridge-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-l3-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-dhcp-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-metering-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-metadata-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-ns-metadata-proxy',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'cinder-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'cinder-scheduler',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-engine',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-api-cfn',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-api-cloudwatch',
-                       'version': constants.MITAKA}),
+            mock.call({'name': 'keystone-wsgi-admin'}, [hosts[1]]),
+            mock.call({'name': 'keystone-wsgi-public'}, [hosts[1]]),
+            mock.call({'name': 'glance-api'}, [hosts[1]]),
+            mock.call({'name': 'glance-registry'}, [hosts[1]]),
+            mock.call({'name': 'nova-conductor'}, [hosts[1]]),
+            mock.call({'name': 'nova-scheduler'}, [hosts[1]]),
+            mock.call({'name': 'nova-spicehtml5proxy'}, [hosts[1]]),
+            mock.call({'name': 'nova-api'}, [hosts[1]]),
+            mock.call({'name': 'neutron-server'}, [hosts[1]]),
+            mock.call({'name': 'neutron-linuxbridge-agent'}, [hosts[1]]),
+            mock.call({'name': 'neutron-l3-agent'}, [hosts[1]]),
+            mock.call({'name': 'neutron-dhcp-agent'}, [hosts[1]]),
+            mock.call({'name': 'neutron-metering-agent'}, [hosts[1]]),
+            mock.call({'name': 'neutron-metadata-agent'}, [hosts[1]]),
+            mock.call({'name': 'neutron-ns-metadata-proxy'}, [hosts[1]]),
+            mock.call({'name': 'cinder-api'}, [hosts[1]]),
+            mock.call({'name': 'cinder-scheduler'}, [hosts[1]]),
+            mock.call({'name': 'heat-api'}, [hosts[1]]),
+            mock.call({'name': 'heat-engine'}, [hosts[1]]),
+            mock.call({'name': 'heat-api-cfn'}, [hosts[1]]),
+            mock.call({'name': 'heat-api-cloudwatch'}, [hosts[1]]),
             # compute
-            mock.call(self.upgrade,
-                      {'name': 'nova-compute',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-linuxbridge-agent',
-                       'version': constants.MITAKA}),
-
+            mock.call({'name': 'nova-compute'}, [hosts[0]]),
+            mock.call({'name': 'neutron-linuxbridge-agent'}, [hosts[0]]),
             # storage
-            mock.call(self.upgrade,
-                      {'name': 'cinder-volume',
-                       'version': constants.MITAKA}),
-        ]
-        self.assertEqual(
-            expected_service_calls,
-            self.engine.driver.pre_service_upgrade_hook.call_args_list)
-        self.assertEqual(
-            expected_service_calls,
-            self.engine.driver.start_upgrade.call_args_list)
-        self.assertEqual(
-            expected_service_calls,
-            self.engine.driver.post_service_upgrade_hook.call_args_list)
-
-        expected_host_calls = [
-            mock.call(self.upgrade,
-                      {'hostname': 'host-2',
-                       'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-                       'id': '5708c51f-5421-4ecd-9a9e-000000000002'}),
-            mock.call(self.upgrade,
-                      {'hostname': 'host-1',
-                       'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-                       'id': '5708c51f-5421-4ecd-9a9e-000000000001'}),
-            mock.call(self.upgrade,
-                      {'hostname': 'host-3',
-                       'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-                       'id': '5708c51f-5421-4ecd-9a9e-000000000003'}),
-        ]
-        self.assertEqual(
-            expected_host_calls,
-            self.engine.driver.pre_host_upgrade_hook.call_args_list)
-        self.assertEqual(
-            expected_host_calls,
-            self.engine.driver.post_host_upgrade_hook.call_args_list)
-
-        self.engine.driver.pre_upgrade_hook.assert_called_once_with(
-            self.upgrade
-        )
+            mock.call({'name': 'cinder-volume'}, [hosts[2]]),
+        ], self.engine.driver.start.call_args_list)
 
     def test_all_in_one_assignment(self):
-        self.dbapi.get_hosts_by_cluster.return_value = [
+        hosts = [
             {'id': '5708c51f-5421-4ecd-9a9e-000000000001',
              'hostname': 'host-1',
              'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687'},
         ]
-
         services = {
             '5708c51f-5421-4ecd-9a9e-000000000001': [
-                {'name': 'nova-spicehtml5proxy',
-                 'version': constants.MITAKA},
-                {'name': 'nova-scheduler',
-                 'version': constants.MITAKA},
-                {'name': 'nova-api',
-                 'version': constants.MITAKA},
-                {'name': 'nova-conductor',
-                 'version': constants.MITAKA},
-                {'name': 'nova-compute',
-                 'version': constants.MITAKA},
-
-                {'name': 'keystone-wsgi-public',
-                 'version': constants.MITAKA},
-                {'name': 'keystone-wsgi-admin',
-                 'version': constants.MITAKA},
-
-                {'name': 'neutron-server',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-linuxbridge-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-l3-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-dhcp-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-metering-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-metadata-agent',
-                 'version': constants.MITAKA},
-                {'name': 'neutron-ns-metadata-proxy',
-                 'version': constants.MITAKA},
-
-                {'name': 'glance-registry',
-                 'version': constants.MITAKA},
-                {'name': 'glance-api',
-                 'version': constants.MITAKA},
-
-                {'name': 'heat-api',
-                 'version': constants.MITAKA},
-                {'name': 'heat-api-cloudwatch',
-                 'version': constants.MITAKA},
-                {'name': 'heat-api-cfn',
-                 'version': constants.MITAKA},
-                {'name': 'heat-engine',
-                 'version': constants.MITAKA},
-
-                {'name': 'cinder-api',
-                 'version': constants.MITAKA},
-                {'name': 'cinder-scheduler',
-                 'version': constants.MITAKA},
-                {'name': 'cinder-volume',
-                 'version': constants.MITAKA},
+                {'name': 'nova-spicehtml5proxy'},
+                {'name': 'nova-scheduler'},
+                {'name': 'nova-api'},
+                {'name': 'nova-conductor'},
+                {'name': 'nova-compute'},
+                {'name': 'keystone-wsgi-public'},
+                {'name': 'keystone-wsgi-admin'},
+                {'name': 'neutron-server'},
+                {'name': 'neutron-linuxbridge-agent'},
+                {'name': 'neutron-l3-agent'},
+                {'name': 'neutron-dhcp-agent'},
+                {'name': 'neutron-metering-agent'},
+                {'name': 'neutron-metadata-agent'},
+                {'name': 'neutron-ns-metadata-proxy'},
+                {'name': 'glance-registry'},
+                {'name': 'glance-api'},
+                {'name': 'heat-api'},
+                {'name': 'heat-api-cloudwatch'},
+                {'name': 'heat-api-cfn'},
+                {'name': 'heat-engine'},
+                {'name': 'cinder-api'},
+                {'name': 'cinder-scheduler'},
+                {'name': 'cinder-volume'},
             ],
         }
 
-        # mock dbapi to return predefined services
-        def get_services_by_host(host):
-            return services[host]
-        self.dbapi.get_services_by_host = get_services_by_host
+        self.dbapi.get_hosts_by_cluster.return_value = hosts
+        self.dbapi.get_services_by_host = lambda host: services[host]
 
         self.engine.start()
 
-        expected_service_calls = [
-            mock.call(self.upgrade,
-                      {'name': 'keystone-wsgi-admin',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'keystone-wsgi-public',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'glance-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'glance-registry',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-conductor',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-scheduler',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-spicehtml5proxy',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'nova-compute',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-server',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-linuxbridge-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-l3-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-dhcp-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-metering-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-metadata-agent',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'neutron-ns-metadata-proxy',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'cinder-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'cinder-scheduler',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'cinder-volume',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-api',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-engine',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-api-cfn',
-                       'version': constants.MITAKA}),
-            mock.call(self.upgrade,
-                      {'name': 'heat-api-cloudwatch',
-                       'version': constants.MITAKA}),
-        ]
-        self.assertEqual(
-            expected_service_calls,
-            self.engine.driver.pre_service_upgrade_hook.call_args_list)
-        self.assertEqual(
-            expected_service_calls,
-            self.engine.driver.start_upgrade.call_args_list)
-        self.assertEqual(
-            expected_service_calls,
-            self.engine.driver.post_service_upgrade_hook.call_args_list)
-
-        expected_host_calls = [
-            mock.call(self.upgrade,
-                      {'hostname': 'host-1',
-                       'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-                       'id': '5708c51f-5421-4ecd-9a9e-000000000001'}),
-        ]
-        self.assertEqual(
-            expected_host_calls,
-            self.engine.driver.pre_host_upgrade_hook.call_args_list)
-        self.assertEqual(
-            expected_host_calls,
-            self.engine.driver.post_host_upgrade_hook.call_args_list)
-
-        self.engine.driver.pre_upgrade_hook.assert_called_once_with(
-            self.upgrade
-        )
+        self.engine.driver.pre_upgrade.assert_called_once_with()
+        self.assertEqual([
+            mock.call({'name': 'keystone-wsgi-admin'}, [hosts[0]]),
+            mock.call({'name': 'keystone-wsgi-public'}, [hosts[0]]),
+            mock.call({'name': 'glance-api'}, [hosts[0]]),
+            mock.call({'name': 'glance-registry'}, [hosts[0]]),
+            mock.call({'name': 'nova-conductor'}, [hosts[0]]),
+            mock.call({'name': 'nova-scheduler'}, [hosts[0]]),
+            mock.call({'name': 'nova-spicehtml5proxy'}, [hosts[0]]),
+            mock.call({'name': 'nova-api'}, [hosts[0]]),
+            mock.call({'name': 'nova-compute'}, [hosts[0]]),
+            mock.call({'name': 'neutron-server'}, [hosts[0]]),
+            mock.call({'name': 'neutron-linuxbridge-agent'}, [hosts[0]]),
+            mock.call({'name': 'neutron-l3-agent'}, [hosts[0]]),
+            mock.call({'name': 'neutron-dhcp-agent'}, [hosts[0]]),
+            mock.call({'name': 'neutron-metering-agent'}, [hosts[0]]),
+            mock.call({'name': 'neutron-metadata-agent'}, [hosts[0]]),
+            mock.call({'name': 'neutron-ns-metadata-proxy'}, [hosts[0]]),
+            mock.call({'name': 'cinder-api'}, [hosts[0]]),
+            mock.call({'name': 'cinder-scheduler'}, [hosts[0]]),
+            mock.call({'name': 'cinder-volume'}, [hosts[0]]),
+            mock.call({'name': 'heat-api'}, [hosts[0]]),
+            mock.call({'name': 'heat-engine'}, [hosts[0]]),
+            mock.call({'name': 'heat-api-cfn'}, [hosts[0]]),
+            mock.call({'name': 'heat-api-cloudwatch'}, [hosts[0]]),
+        ], self.engine.driver.start.call_args_list)

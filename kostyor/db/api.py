@@ -184,6 +184,20 @@ def create_service(name, host_id, version):
     return new_service.to_dict()
 
 
+def get_service_with_hosts(name, cluster_id):
+    service = db_session.query(models.Service) \
+        .join(models.hosts_services) \
+        .join(models.Host) \
+        .filter(models.Service.name == name) \
+        .filter(models.Host.cluster_id == cluster_id) \
+        .first()
+
+    if not service:
+        return None, None
+
+    return service.to_dict(), [host.to_dict() for host in service.hosts]
+
+
 def get_services_by_host(host_id):
     query = db_session.query(models.Service).filter(
         models.Service.hosts.any(id=host_id)

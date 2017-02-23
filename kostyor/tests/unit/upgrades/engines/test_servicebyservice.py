@@ -9,20 +9,20 @@ from kostyor.upgrades import engines
 from .common import MockUpgradeDriver
 
 
-class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
+class TestServiceByServiceEngine(oslotest.base.BaseTestCase):
 
     hosts = [
         {'id': '5708c51f-5421-4ecd-9a9e-000000000001',
-         'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-         'hostname': 'host-1'},
+         'hostname': 'host-1',
+         'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687'},
 
         {'id': '5708c51f-5421-4ecd-9a9e-000000000002',
-         'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-         'hostname': 'host-2'},
+         'hostname': 'host-2',
+         'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687'},
 
         {'id': '5708c51f-5421-4ecd-9a9e-000000000003',
-         'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
-         'hostname': 'host-3'},
+         'hostname': 'host-3',
+         'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687'},
     ]
 
     upgrade = {
@@ -35,14 +35,34 @@ class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
         'status': constants.READY_FOR_UPGRADE,
     }
 
-    def setUp(self):
-        super(TestNodeByNodeEngine, self).setUp()
-        self.engine = engines.NodeByNode(self.upgrade, MockUpgradeDriver())
+    @classmethod
+    def get_fake_get_service_with_hosts(cls, assignment):
+        def get_service_with_hosts(service_name, cluster_id):
+            service = None
+            hosts = []
 
-        patcher = mock.patch('kostyor.upgrades.engines.nodebynode.dbapi')
+            for hostid, services in assignment.items():
+                try:
+                    tmp_service = next(
+                        svc for svc in services if svc['name'] == service_name)
+                except StopIteration:
+                    continue
+                else:
+                    service = tmp_service
+                    hosts.append(hostid)
+
+            return service, list(filter(lambda h: h['id'] in hosts, cls.hosts))
+        return get_service_with_hosts
+
+    def setUp(self):
+        super(TestServiceByServiceEngine, self).setUp()
+        self.engine = engines.ServiceByService(
+            self.upgrade, MockUpgradeDriver()
+        )
+
+        patcher = mock.patch('kostyor.upgrades.engines.servicebyservice.dbapi')
         self.addCleanup(patcher.stop)
         self.dbapi = patcher.start()
-        self.dbapi.get_hosts_by_cluster.return_value = self.hosts
 
     def test_multinode_assignment(self):
         assignment = {
@@ -80,13 +100,14 @@ class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
                 {'name': 'cinder-volume'},
             ],
         }
-        self.dbapi.get_services_by_host = lambda host: assignment.get(host, [])
+
+        self.dbapi.get_service_with_hosts = \
+            self.get_fake_get_service_with_hosts(assignment)
 
         self.engine.start()
 
         self.engine.driver.pre_upgrade.assert_called_once_with()
         self.assertEqual([
-            # controller
             mock.call({'name': 'keystone-wsgi-admin'}, [self.hosts[1]]),
             mock.call({'name': 'keystone-wsgi-public'}, [self.hosts[1]]),
             mock.call({'name': 'glance-api'}, [self.hosts[1]]),
@@ -95,8 +116,10 @@ class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
             mock.call({'name': 'nova-scheduler'}, [self.hosts[1]]),
             mock.call({'name': 'nova-spicehtml5proxy'}, [self.hosts[1]]),
             mock.call({'name': 'nova-api'}, [self.hosts[1]]),
+            mock.call({'name': 'nova-compute'}, [self.hosts[0]]),
             mock.call({'name': 'neutron-server'}, [self.hosts[1]]),
-            mock.call({'name': 'neutron-linuxbridge-agent'}, [self.hosts[1]]),
+            mock.call({'name': 'neutron-linuxbridge-agent'},
+                      [self.hosts[0], self.hosts[1]]),
             mock.call({'name': 'neutron-l3-agent'}, [self.hosts[1]]),
             mock.call({'name': 'neutron-dhcp-agent'}, [self.hosts[1]]),
             mock.call({'name': 'neutron-metering-agent'}, [self.hosts[1]]),
@@ -104,15 +127,11 @@ class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
             mock.call({'name': 'neutron-ns-metadata-proxy'}, [self.hosts[1]]),
             mock.call({'name': 'cinder-api'}, [self.hosts[1]]),
             mock.call({'name': 'cinder-scheduler'}, [self.hosts[1]]),
+            mock.call({'name': 'cinder-volume'}, [self.hosts[2]]),
             mock.call({'name': 'heat-api'}, [self.hosts[1]]),
             mock.call({'name': 'heat-engine'}, [self.hosts[1]]),
             mock.call({'name': 'heat-api-cfn'}, [self.hosts[1]]),
             mock.call({'name': 'heat-api-cloudwatch'}, [self.hosts[1]]),
-            # compute
-            mock.call({'name': 'nova-compute'}, [self.hosts[0]]),
-            mock.call({'name': 'neutron-linuxbridge-agent'}, [self.hosts[0]]),
-            # storage
-            mock.call({'name': 'cinder-volume'}, [self.hosts[2]]),
         ], self.engine.driver.start.call_args_list)
 
     def test_all_in_one_assignment(self):
@@ -143,7 +162,9 @@ class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
                 {'name': 'cinder-volume'},
             ],
         }
-        self.dbapi.get_services_by_host = lambda host: assignment.get(host, [])
+
+        self.dbapi.get_service_with_hosts = \
+            self.get_fake_get_service_with_hosts(assignment)
 
         self.engine.start()
 

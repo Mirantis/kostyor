@@ -5,7 +5,7 @@ import oslotest.base
 
 from kostyor.common import constants
 from kostyor.rpc import tasks
-from kostyor.upgrades import Engine
+from kostyor.upgrades import engines
 from kostyor.upgrades.drivers import base as basedriver
 
 
@@ -30,10 +30,10 @@ class MockUpgradeDriver(basedriver.UpgradeDriver):
         return instance
 
 
-class TestEngine(oslotest.base.BaseTestCase):
+class TestNodeByNodeEngine(oslotest.base.BaseTestCase):
 
     def setUp(self):
-        super(TestEngine, self).setUp()
+        super(TestNodeByNodeEngine, self).setUp()
         self.upgrade = {
             'id': 'd174522c-95fc-4996-8dfa-0c2405a3b0c1',
             'cluster_id': '2ba8fad8-3a0f-47db-a45b-62df1d811687',
@@ -43,9 +43,9 @@ class TestEngine(oslotest.base.BaseTestCase):
             'upgrade_end_time': None,
             'status': constants.READY_FOR_UPGRADE,
         }
-        self.engine = Engine(self.upgrade, MockUpgradeDriver())
+        self.engine = engines.NodeByNode(self.upgrade, MockUpgradeDriver())
 
-        patcher = mock.patch('kostyor.upgrades.engine.dbapi')
+        patcher = mock.patch('kostyor.upgrades.engines.nodebynode.dbapi')
         self.addCleanup(patcher.stop)
         self.dbapi = patcher.start()
 

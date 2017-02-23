@@ -168,7 +168,7 @@ def iterservices(host):
             yield servicemap[service]
 
 
-class Engine(object):
+class NodeByNode(object):
     """Manage a node-by-node rolling upgrade of OpenStack environment.
 
     This includes but not limited to the following steps:

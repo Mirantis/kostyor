@@ -7,7 +7,7 @@ from flask_restful import Resource, fields, marshal_with, abort
 
 from kostyor.common import constants, exceptions
 from kostyor.db import api as db_api
-from kostyor import upgrades
+from kostyor.upgrades import engines
 
 
 _PUBLIC_ATTRIBUTES = {
@@ -62,7 +62,7 @@ class Upgrades(Resource):
             driver_name = payload.get('driver', 'noop')
             driver = _SUPPORTED_DRIVERS[driver_name].plugin()
 
-            engine = upgrades.Engine(upgrade, driver)
+            engine = engines.NodeByNode(upgrade, driver)
             engine.start()
 
         except exceptions.BadRequest as exc:

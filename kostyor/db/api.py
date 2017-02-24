@@ -154,8 +154,17 @@ def get_hosts_by_cluster(cluster_id):
     # ensure cluster exists and throw ClusterNotFound if not
     cluster = _get_cluster(cluster_id)
 
-    hosts = db_session.query(models.Host).filter_by(cluster_id=cluster.id)
-    return [host.to_dict() for host in hosts]
+    query = db_session.query(models.Host).filter_by(cluster_id=cluster.id)
+    hosts = {host.id: host.to_dict() for host in query}
+
+    query = db_session.query(models.hosts_services).filter(
+        models.hosts_services.c.host_id.in_(hosts)
+    )
+    for record in query:
+        host = hosts[record.host_id]
+        host.setdefault('services', []).append(record.service_id)
+
+    return list(hosts.values())
 
 
 def get_host(host_id):
@@ -163,19 +172,32 @@ def get_host(host_id):
 
 
 def create_service(name, host_id, version):
+    # TODO: get rid of `host_id` parameter as it's not always present
+    host = db_session.query(models.Host).get(host_id)
     new_service = models.Service()
     new_service.name = name
     new_service.host_id = host_id
     new_service.version = version
+    host.services.append(new_service)
     db_session.add(new_service)
     db_session.commit()
     return new_service.to_dict()
 
 
 def get_services_by_host(host_id):
-    services = db_session.query(models.Service).filter_by(
-        host_id=host_id)
-    return [service.to_dict() for service in services]
+    query = db_session.query(models.Service).filter(
+        models.Service.hosts.any(id=host_id)
+    )
+    services = {service.id: service.to_dict() for service in query}
+
+    query = db_session.query(models.hosts_services).filter(
+        models.hosts_services.c.service_id.in_(services)
+    )
+    for record in query:
+        service = services[record.service_id]
+        service.setdefault('hosts', []).append(record.host_id)
+
+    return list(services.values())
 
 
 def create_cluster(name, version, status):
@@ -191,3 +213,35 @@ def update_cluster(cluster_id, **kwargs):
     for arg, val in six.iteritems(kwargs):
         setattr(cluster, arg, val)
     db_session.commit()
+
+
+def discover_cluster(name, info):
+    """Create a cluster instance based on discovered information.
+
+    :param name: a cluster name to be used
+    :type name: str
+
+    :param info: discovered information about the deployment
+    :type info: dict
+    """
+    cluster = create_cluster(
+        name,
+        info.get('version', constants.UNKNOWN),
+        info.get('status', constants.NOT_READY_FOR_UPGRADE)
+    )
+
+    objects = []
+    cache = {}
+
+    for hostname, services in info.get('hosts', {}).items():
+        host = models.Host(hostname=hostname, cluster_id=cluster['id'])
+
+        for service in services:
+            if service['name'] not in cache:
+                cache[service['name']] = models.Service(name=service['name'])
+            host.services.append(cache[service['name']])
+        objects.append(host)
+
+    db_session.add_all(objects)
+    db_session.commit()
+    return cluster

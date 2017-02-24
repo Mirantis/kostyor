@@ -1,11 +1,8 @@
 import copy
 import sys
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_restful import Api
-import six
-from stevedore import driver
-from stevedore import extension
 
 from kostyor.common import constants
 from kostyor import conf
@@ -48,18 +45,6 @@ def generate_response(status, message):
     return resp
 
 
-def discovery_drivers():
-    ext_manager = extension.ExtensionManager(
-        namespace='kostyor.discovery_drivers')
-    return ext_manager.names()
-
-
-@app.route('/discovery-methods')
-def get_discovery_methods():
-    resp = jsonify(discovery_drivers())
-    return resp
-
-
 @app.route('/upgrade-versions/<cluster_id>')
 def get_upgrade_versions(cluster_id):
     cluster = db_api.get_cluster(cluster_id)
@@ -78,46 +63,6 @@ def list_upgrade_versions():
     res = copy.copy(constants.OPENSTACK_VERSIONS)
     res.remove(constants.UNKNOWN)
     return jsonify(res)
-
-
-@app.route('/discover-cluster', methods=['POST'])
-def discover_cluster():
-    discovery_method = str(request.form.get('method')).lower()
-    if discovery_method in discovery_drivers():
-        discovery_args = {}
-        for key in request.form:
-            if key not in ['method', 'cluster_name']:
-                discovery_args[key] = request.form.get(key, None)
-        try:
-            discovery_driver = driver.DriverManager(
-                namespace='kostyor.discovery_drivers',
-                name=discovery_method,
-                invoke_on_load=True,
-                invoke_kwds=discovery_args,
-            ).driver
-            info = discovery_driver.discover()
-        except Exception as e:
-            resp = generate_response(
-                getattr(e, 'http_status', 404),
-                six.text_type(e)
-            )
-            return resp
-
-        # Reuse creation method from flask-restful in order to follow DRY
-        # principle. Anyway, this code will be removed once appropriate
-        # patch is merged to Kostyor-cli.
-        from kostyor.resources.discover import _create_cluster
-        new_cluster = _create_cluster(request.form.get('cluster_name'), info)
-    else:
-        resp = generate_response(
-            404,
-            'Unsupported discovery method: %s' % discovery_method
-        )
-        return resp
-
-    resp = jsonify(new_cluster)
-    resp.status_code = 201
-    return resp
 
 
 if __name__ == '__main__':

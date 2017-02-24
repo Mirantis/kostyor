@@ -26,8 +26,8 @@ class TestServicesEndpoint(oslotest.base.BaseTestCase):
         fake_nova_api = {
             'id': 'nova-api-3333',
             'name': 'nova-api',
-            'host_id': '1111',
-            'version': constants.MITAKA
+            'version': constants.MITAKA,
+            'hosts': ['1111'],
         }
         fake_keystone_api = fake_nova_api.copy()
         fake_keystone_api['id'] = 'keystone-api-4444'

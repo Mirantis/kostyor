@@ -15,7 +15,8 @@ class TestHostsEndpoint(oslotest.base.BaseTestCase):
         self.fake_host = {
             'id': '1111',
             'hostname': 'hostname_1',
-            'cluster_id': '1234'
+            'cluster_id': '1234',
+            'services': [],
         }
 
     @mock.patch('kostyor.db.api.get_hosts_by_cluster')
@@ -23,7 +24,8 @@ class TestHostsEndpoint(oslotest.base.BaseTestCase):
         fake_host_2 = {
             'id': '2222',
             'hostname': 'hostname_2',
-            'cluster_id': '1234'
+            'cluster_id': '1234',
+            'services': [],
         }
         fake_hosts = [self.fake_host, fake_host_2]
         get_hosts_by_cluster.return_value = fake_hosts

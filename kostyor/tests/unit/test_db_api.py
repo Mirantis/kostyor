@@ -94,6 +94,30 @@ class DbApiTestCase(base.BaseTestCase):
         result = db_api.get_host(host['id'])
         self.assertEqual(expected_result, result)
 
+    def test_get_hosts_by_cluster_w_services(self):
+        host = models.Host(hostname='host-a', cluster_id=self.cluster['id'])
+        service_a = models.Service(name='nova-api', version=constants.MITAKA)
+        service_b = models.Service(name='glance-api', version=constants.MITAKA)
+        host.services.extend([service_a, service_b])
+        self.context.session.add(host)
+        self.context.session.commit()
+
+        actual = db_api.get_hosts_by_cluster(self.cluster['id'])
+        actual[0]['services'].sort()
+
+        expected = [
+            {
+                'id': host.id,
+                'hostname': 'host-a',
+                'cluster_id': self.cluster['id'],
+                'services': sorted([
+                    service_a.id,
+                    service_b.id,
+                ])
+            }
+        ]
+        self.assertEqual(expected, actual)
+
     def test_get_host_by_cluster_wrong_cluster(self):
         self.assertRaises(exceptions.ClusterNotFound,
                           db_api.get_hosts_by_cluster,
@@ -106,11 +130,36 @@ class DbApiTestCase(base.BaseTestCase):
                                         constants.MITAKA)
         expected_result = [{'id': service['id'],
                             'name': 'nova-api',
-                            'host_id': host['id'],
-                            'version': constants.MITAKA}]
+                            'version': constants.MITAKA,
+                            'hosts': [host['id']]}]
 
         result = db_api.get_services_by_host(host['id'])
         self.assertEqual(expected_result, result)
+
+    def test_get_services_by_host_existing_cluster_success_multihosts(self):
+        host_a = models.Host(hostname='host-a', cluster_id=self.cluster['id'])
+        host_b = models.Host(hostname='host-b', cluster_id=self.cluster['id'])
+        service = models.Service(name='nova-api', version=constants.MITAKA)
+        host_a.services.append(service)
+        host_b.services.append(service)
+        self.context.session.add(host_a)
+        self.context.session.commit()
+
+        actual = db_api.get_services_by_host(host_a.id)
+        actual[0]['hosts'].sort()
+
+        expected = [
+            {
+                'id': service.id,
+                'name': 'nova-api',
+                'version': constants.MITAKA,
+                'hosts': sorted([
+                    host_a.id,
+                    host_b.id,
+                ])
+            }
+        ]
+        self.assertEqual(expected, actual)
 
     def test_get_services_by_host_wrong_host_id_empty_list(self):
         result = db_api.get_services_by_host('fake-host-id')
@@ -221,3 +270,62 @@ class DbApiTestCase(base.BaseTestCase):
         self.assertRaises(exceptions.ClusterNotFound,
                           db_api.rollback_cluster_upgrade,
                           'non-existing-id')
+
+    def test_discover_cluster(self):
+        cluster = db_api.discover_cluster('test', {
+            'hosts': {
+                'host-a': [
+                    {'name': 'nova-api'},
+                    {'name': 'nova-conductor'},
+                ],
+                'host-b': [
+                    {'name': 'nova-compute'},
+                ],
+                'host-c': [
+                    {'name': 'nova-compute'},
+                ],
+            },
+        })
+        hosts = {
+            host.hostname: host
+            for host in self.context.session.query(models.Host)}
+        services = {
+            service.name: service
+            for service in self.context.session.query(models.Service)}
+
+        for host in hosts.values():
+            self.assertEqual(cluster['id'], host.cluster_id)
+
+        self.assertEqual(
+            sorted(['host-a', 'host-b', 'host-c']),
+            sorted(hosts))
+        self.assertEqual(
+            sorted(['nova-api', 'nova-conductor']),
+            sorted([svc.name for svc in hosts['host-a'].services]))
+        self.assertEqual(
+            sorted(['nova-compute']),
+            sorted([svc.name for svc in hosts['host-b'].services]))
+        self.assertEqual(
+            sorted(['nova-compute']),
+            sorted([svc.name for svc in hosts['host-c'].services]))
+        self.assertIs(
+            hosts['host-b'].services[0],
+            hosts['host-c'].services[0])
+
+        self.assertEqual(
+            sorted(['nova-api', 'nova-conductor', 'nova-compute']),
+            sorted(services))
+        self.assertEqual(
+            sorted(['host-a']),
+            sorted([host.hostname for host in services['nova-api'].hosts]))
+        self.assertEqual(
+            sorted(['host-a']),
+            sorted([
+                host.hostname for host in services['nova-conductor'].hosts
+            ]))
+        self.assertEqual(
+            sorted(['host-b', 'host-c']),
+            sorted([host.hostname for host in services['nova-compute'].hosts]))
+        self.assertIs(
+            services['nova-api'].hosts[0],
+            services['nova-conductor'].hosts[0])

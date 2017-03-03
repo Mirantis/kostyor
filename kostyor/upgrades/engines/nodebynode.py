@@ -144,6 +144,11 @@ def iterhosts(hosts):
 
     def _sortkey(host):
         services = dbapi.get_services_by_host(host['id'])
+
+        # If no services assigned to the host let's return low priority.
+        if not services:
+            return len(serviceindex)
+
         # Well, that's a tricky part. :) We need to sort hosts in the order
         # of service occurrence. Since each host may (and probably will)
         # contain multiple services, we need to use the most important
@@ -168,7 +173,7 @@ def iterservices(host):
             yield servicemap[service]
 
 
-class Engine(object):
+class NodeByNode(object):
     """Manage a node-by-node rolling upgrade of OpenStack environment.
 
     This includes but not limited to the following steps:

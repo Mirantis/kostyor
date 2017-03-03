@@ -74,7 +74,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         received = json.loads(resp.get_data(as_text=True))
         self.assertEqual({'message': 'Upgrade 123 not found.'}, received)
 
-    @mock.patch('kostyor.upgrades.Engine')
+    @mock.patch('kostyor.upgrades.engines.NodeByNode')
     @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_post_upgrades(self, fake_create_upgrade, _, fake_engine):
@@ -148,7 +148,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         self.assertEqual(expected_error, error)
         self.assertFalse(fake_create_upgrade.called)
 
-    @mock.patch('kostyor.upgrades.Engine')
+    @mock.patch('kostyor.upgrades.engines.NodeByNode')
     @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_post_upgrades_no_driver(self, fake_createupgrade, _, fake_engine):

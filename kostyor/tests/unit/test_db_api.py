@@ -1,5 +1,6 @@
 import uuid
 import datetime
+import operator
 
 from kostyor.db import models
 from kostyor.db import api as db_api
@@ -329,3 +330,69 @@ class DbApiTestCase(base.BaseTestCase):
         self.assertIs(
             services['nova-api'].hosts[0],
             services['nova-conductor'].hosts[0])
+
+    def test_get_service_with_hosts(self):
+        service_a = models.Service(name='nova-api', version=constants.MITAKA)
+        service_b = models.Service(name='glance-api', version=constants.MITAKA)
+        host_a = models.Host(hostname='host-a', cluster_id=self.cluster['id'])
+        host_b = models.Host(hostname='host-b', cluster_id=self.cluster['id'])
+        host_c = models.Host(hostname='host-c', cluster_id=self.cluster['id'])
+        host_a.services.append(service_a)
+        host_b.services.append(service_a)
+        host_c.services.append(service_b)
+        self.context.session.add_all([host_a, host_b, host_c])
+        self.context.session.commit()
+
+        service, hosts = db_api.get_service_with_hosts(
+            'nova-api', self.cluster['id']
+        )
+        hostkeyfn = operator.itemgetter('hostname')
+        self.assertEqual(
+            {
+                'id': service_a.id,
+                'name': 'nova-api',
+                'version': constants.MITAKA,
+            },
+            service)
+        self.assertEqual(
+            sorted([
+                {
+                    'id': host_a.id,
+                    'cluster_id': self.cluster['id'],
+                    'hostname': 'host-a',
+                },
+                {
+                    'id': host_b.id,
+                    'cluster_id': self.cluster['id'],
+                    'hostname': 'host-b',
+                },
+            ], key=hostkeyfn),
+            sorted(hosts, key=hostkeyfn))
+
+        service, hosts = db_api.get_service_with_hosts(
+            'glance-api', self.cluster['id']
+        )
+        self.assertEqual(
+            {
+                'id': service_b.id,
+                'name': 'glance-api',
+                'version': constants.MITAKA,
+            },
+            service)
+        self.assertEqual(
+            sorted([
+                {
+                    'id': host_c.id,
+                    'cluster_id': self.cluster['id'],
+                    'hostname': 'host-c',
+                },
+            ], key=hostkeyfn),
+            sorted(hosts, key=hostkeyfn))
+
+    def test_get_service_with_hosts_no_found(self):
+        service, hosts = db_api.get_service_with_hosts(
+            'nova-api', self.cluster['id']
+        )
+
+        self.assertIsNone(service)
+        self.assertIsNone(hosts)

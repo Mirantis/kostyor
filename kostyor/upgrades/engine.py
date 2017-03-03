@@ -3,7 +3,6 @@ import collections
 import celery
 
 from kostyor.db import api as dbapi
-from kostyor.upgrades.drivers import noop as noop_driver
 
 
 Project = collections.namedtuple('Project', ['name', 'services'])
@@ -184,12 +183,12 @@ class Engine(object):
     :param upgrade: an upgrade task to proceed with
     """
 
-    def __init__(self, upgrade, driver=noop_driver.NoOpDriver()):
+    def __init__(self, upgrade, driver):
         self._upgrade = upgrade
         self.driver = driver
 
     def start(self):
-        subtasks = [self.driver.pre_upgrade_hook(self._upgrade)]
+        subtasks = [self.driver.pre_upgrade()]
         hosts = dbapi.get_hosts_by_cluster(self._upgrade['cluster_id'])
 
         # We may have plenty controllers each with various set of services.
@@ -198,26 +197,8 @@ class Engine(object):
         # keystone, then with nova, and so on. See iteration details in
         # get_controllers() docstring.
         for host in iterhosts(hosts):
-            subtasks.append(
-                self.driver.pre_host_upgrade_hook(self._upgrade, host)
-            )
-
             for service in iterservices(host):
-                subtasks.extend([
-                    self.driver.pre_service_upgrade_hook(
-                        self._upgrade, service
-                    ),
-                    self.driver.start_upgrade(
-                        self._upgrade, service
-                    ),
-                    self.driver.post_service_upgrade_hook(
-                        self._upgrade, service
-                    ),
-                ])
-
-            subtasks.append(
-                self.driver.post_host_upgrade_hook(self._upgrade, host)
-            )
+                subtasks.append(self.driver.start(service, [host]))
 
         # Execute gathered tasks one-by-one preserving order. Please note,
         # that it doesn't mean there can't be parallel execution since driver

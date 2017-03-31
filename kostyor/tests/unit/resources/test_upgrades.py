@@ -94,6 +94,7 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
 
+        self.assertEqual({}, fake_engine.call_args[0][1].parameters)
         fake_create_upgrade.assert_called_once_with(
             self.fake_upgrade['cluster_id'],
             constants.NEWTON,
@@ -273,6 +274,45 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
                 'Upgrade procedure from "mitaka" to "libery" is not allowed.',
         }
         self.assertEqual(expected_error, error)
+
+    @mock.patch('kostyor.upgrades.engines.NodeByNode')
+    @mock.patch('kostyor.db.api.get_cluster')
+    @mock.patch('kostyor.db.api.create_cluster_upgrade')
+    def test_post_upgrades_params(self, fake_create_upgrade, _, fake_engine):
+        fake_create_upgrade.return_value = self.fake_upgrade
+
+        resp = self.app.post(
+            '/upgrades',
+            content_type='application/json',
+            data=json.dumps({
+                'cluster_id': self.fake_upgrade['cluster_id'],
+                'to_version': constants.NEWTON,
+                'driver': 'noop',
+                'parameters': {
+                    'x': 42,
+                    'y': 'do nothing at all'
+                }
+            })
+        )
+        self.assertEqual(201, resp.status_code)
+
+        received = json.loads(resp.get_data(as_text=True))
+        self._assert_upgrades(self.fake_upgrade, received)
+
+        fake_create_upgrade.assert_called_once_with(
+            self.fake_upgrade['cluster_id'],
+            constants.NEWTON,
+        )
+        self.assertEqual({
+            'x': 42,
+            'y': 'do nothing at all'
+        }, fake_engine.call_args[0][1].parameters)
+        fake_engine.calls_args[1]
+        fake_engine.assert_called_once_with(
+            self.fake_upgrade,
+            mock.ANY,
+        )
+        fake_engine().start.assert_called_once_with()
 
     def _make_put_upgrade(self, action, side_effect=None):
         action_fn = mock.Mock(

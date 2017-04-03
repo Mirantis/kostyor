@@ -34,7 +34,7 @@ class TestClustersEndpoint(oslotest.base.BaseTestCase):
         resp = self.app.get('/clusters')
         self.assertEqual(200, resp.status_code)
 
-        received = json.loads(resp.get_data(as_text=True))['clusters']
+        received = json.loads(resp.get_data(as_text=True))
         self.assertEqual(expected, received)
 
     @mock.patch('kostyor.db.api.get_cluster')

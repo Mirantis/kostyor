@@ -19,10 +19,9 @@ _PUBLIC_ATTRIBUTES = {
 
 class Clusters(Resource):
 
-    @marshal_with({'clusters': fields.Nested(_PUBLIC_ATTRIBUTES)})
+    @marshal_with(_PUBLIC_ATTRIBUTES)
     def get(self):
-        # TODO: get rid of intermediate 'clusters' attribute
-        return {'clusters': db_api.get_clusters()}
+        return db_api.get_clusters()
 
 
 class Cluster(Resource):

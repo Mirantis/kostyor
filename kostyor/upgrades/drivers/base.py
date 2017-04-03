@@ -7,6 +7,9 @@ from kostyor.rpc import tasks
 @six.add_metaclass(abc.ABCMeta)
 class UpgradeDriver():
 
+    def __init__(self, parameters=None):
+        self.parameters = parameters or {}
+
     def pre_upgrade(self):
         """Get tasks to be executed before main upgrade procedure.
 

@@ -30,10 +30,22 @@ _SUPPORTED_DRIVERS = stevedore.extension.ExtensionManager(
 class Upgrades(Resource):
 
     _schema = {
-        'cluster_id': {'type': 'string', 'required': True},
-        'to_version': {'type': 'string', 'required': True,
-                       'allowed': constants.OPENSTACK_VERSIONS},
-        'driver': {'type': 'string', 'allowed': _SUPPORTED_DRIVERS.names()},
+        'cluster_id': {
+            'type': 'string',
+            'required': True,
+        },
+        'to_version': {
+            'type': 'string',
+            'required': True,
+            'allowed': constants.OPENSTACK_VERSIONS,
+        },
+        'driver': {
+            'type': 'string',
+            'allowed': _SUPPORTED_DRIVERS.names(),
+        },
+        'parameters': {
+            'type': 'dict',
+        },
     }
 
     @marshal_with(_PUBLIC_ATTRIBUTES)
@@ -57,10 +69,10 @@ class Upgrades(Resource):
                 payload['to_version']
             )
 
-            # TODO: Driver must become requires argument once CLI forces
-            #       users to choose one.
             driver_name = payload.get('driver', 'noop')
-            driver = _SUPPORTED_DRIVERS[driver_name].plugin()
+            driver = _SUPPORTED_DRIVERS[driver_name].plugin(
+                parameters=payload.get('parameters', {}),
+            )
 
             engine = engines.NodeByNode(upgrade, driver)
             engine.start()

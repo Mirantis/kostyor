@@ -7,7 +7,6 @@ from flask_restful import Resource, fields, marshal_with, abort
 
 from kostyor.common import constants, exceptions
 from kostyor.db import api as db_api
-from kostyor.upgrades import engines
 
 
 _PUBLIC_ATTRIBUTES = {
@@ -19,6 +18,12 @@ _PUBLIC_ATTRIBUTES = {
     'upgrade_start_time': fields.DateTime('iso8601'),
     'upgrade_end_time': fields.DateTime('iso8601'),
 }
+
+
+_SUPPORTED_ENGINES = stevedore.extension.ExtensionManager(
+    namespace='kostyor.engines',
+    invoke_on_load=False,
+)
 
 
 _SUPPORTED_DRIVERS = stevedore.extension.ExtensionManager(
@@ -38,6 +43,10 @@ class Upgrades(Resource):
             'type': 'string',
             'required': True,
             'allowed': constants.OPENSTACK_VERSIONS,
+        },
+        'engine': {
+            'type': 'string',
+            'allowed': _SUPPORTED_ENGINES.names(),
         },
         'driver': {
             'type': 'string',
@@ -74,7 +83,8 @@ class Upgrades(Resource):
                 parameters=payload.get('parameters', {}),
             )
 
-            engine = engines.NodeByNode(upgrade, driver)
+            engine_name = payload.get('engine', 'node-by-node')
+            engine = _SUPPORTED_ENGINES[engine_name].plugin(upgrade, driver)
             engine.start()
 
         except exceptions.BadRequest as exc:

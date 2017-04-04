@@ -3,6 +3,7 @@ import datetime
 
 import mock
 import oslotest.base
+import stevedore
 
 from kostyor.common import constants, exceptions
 from kostyor.rest_api import app
@@ -23,6 +24,21 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             'upgrade_start_time': datetime.datetime.utcnow(),
             'upgrade_end_time': datetime.datetime.utcnow(),
         }
+
+        self.engine_ext = stevedore.extension.Extension(
+            name='node-by-node',
+            entry_point=None,
+            plugin=mock.Mock(),
+            obj=None,
+        )
+        patcher = mock.patch(
+            'kostyor.resources.upgrades._SUPPORTED_ENGINES',
+            stevedore.ExtensionManager.make_test_instance(
+                extensions=[self.engine_ext],
+            )
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def _assert_upgrades(self, db_instance, api_instance):
         # timestampes in db instance are represented as datetime objects
@@ -74,10 +90,9 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         received = json.loads(resp.get_data(as_text=True))
         self.assertEqual({'message': 'Upgrade 123 not found.'}, received)
 
-    @mock.patch('kostyor.upgrades.engines.NodeByNode')
     @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    def test_post_upgrades(self, fake_create_upgrade, _, fake_engine):
+    def test_post_upgrades(self, fake_create_upgrade, _):
         fake_create_upgrade.return_value = self.fake_upgrade
 
         resp = self.app.post(
@@ -94,16 +109,16 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         received = json.loads(resp.get_data(as_text=True))
         self._assert_upgrades(self.fake_upgrade, received)
 
-        self.assertEqual({}, fake_engine.call_args[0][1].parameters)
+        self.assertEqual({}, self.engine_ext.plugin.call_args[0][1].parameters)
         fake_create_upgrade.assert_called_once_with(
             self.fake_upgrade['cluster_id'],
             constants.NEWTON,
         )
-        fake_engine.assert_called_once_with(
+        self.engine_ext.plugin.assert_called_once_with(
             self.fake_upgrade,
             mock.ANY,
         )
-        fake_engine().start.assert_called_once_with()
+        self.engine_ext.plugin().start.assert_called_once_with()
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_post_upgrades_no_to_version(self, fake_create_upgrade):
@@ -149,10 +164,9 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         self.assertEqual(expected_error, error)
         self.assertFalse(fake_create_upgrade.called)
 
-    @mock.patch('kostyor.upgrades.engines.NodeByNode')
     @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    def test_post_upgrades_no_driver(self, fake_createupgrade, _, fake_engine):
+    def test_post_upgrades_no_driver(self, fake_createupgrade, _):
         # TODO: Reimplement test to check that 400 Bad Request is returned
         #       once 'driver' is mandatory parameter.
 
@@ -175,11 +189,11 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
             self.fake_upgrade['cluster_id'],
             constants.NEWTON,
         )
-        fake_engine.assert_called_once_with(
+        self.engine_ext.plugin.assert_called_once_with(
             self.fake_upgrade,
             mock.ANY,
         )
-        fake_engine().start.assert_called_once_with()
+        self.engine_ext.plugin().start.assert_called_once_with()
 
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
     def test_post_upgrades_wrong_to_version(self, fake_db_create_upgrade):
@@ -275,10 +289,9 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         }
         self.assertEqual(expected_error, error)
 
-    @mock.patch('kostyor.upgrades.engines.NodeByNode')
     @mock.patch('kostyor.db.api.get_cluster')
     @mock.patch('kostyor.db.api.create_cluster_upgrade')
-    def test_post_upgrades_params(self, fake_create_upgrade, _, fake_engine):
+    def test_post_upgrades_params(self, fake_create_upgrade, _):
         fake_create_upgrade.return_value = self.fake_upgrade
 
         resp = self.app.post(
@@ -306,13 +319,12 @@ class TestUpgradesEndpoint(oslotest.base.BaseTestCase):
         self.assertEqual({
             'x': 42,
             'y': 'do nothing at all'
-        }, fake_engine.call_args[0][1].parameters)
-        fake_engine.calls_args[1]
-        fake_engine.assert_called_once_with(
+        }, self.engine_ext.plugin.call_args[0][1].parameters)
+        self.engine_ext.plugin.assert_called_once_with(
             self.fake_upgrade,
             mock.ANY,
         )
-        fake_engine().start.assert_called_once_with()
+        self.engine_ext.plugin().start.assert_called_once_with()
 
     def _make_put_upgrade(self, action, side_effect=None):
         action_fn = mock.Mock(
